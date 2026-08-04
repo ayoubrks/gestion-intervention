@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="SmartMaintenance.Api/SmartMaintenance.Api.csproj" />
+  <Project Path="SmartMaintenance.Application/SmartMaintenance.Application.csproj" />
+  <Project Path="SmartMaintenance.Domain/SmartMaintenance.Domain.csproj" />
+  <Project Path="SmartMaintenance.Infrastructure/SmartMaintenance.Infrastructure.csproj" />
+</Solution>

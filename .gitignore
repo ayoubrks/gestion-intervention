@@ -1,0 +1,34 @@
+# IDEs and Editors
+.vs/
+.idea/
+.vscode/
+.claude/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.sw?
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Node.js
+node_modules/
+dist/
+dist-ssr/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.local
+
+# .NET / C#
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
