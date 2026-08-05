@@ -21,6 +21,7 @@ namespace SmartMaintenance.Application.DTOs.Interventions
 
         // Technicien assigné
         public int? TechnicianId { get; set; }
+        public int? TechnicianUserId { get; set; }
         public string? TechnicianName { get; set; }
         public string? TechnicianSpecialization { get; set; }
 

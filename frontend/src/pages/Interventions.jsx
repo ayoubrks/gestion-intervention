@@ -50,10 +50,10 @@ const Interventions = () => {
     setLoading(true);
     try {
       const [invData, eqData, userData, partsData] = await Promise.all([
-        interventionService.getAllInterventions(1, 100),
-        equipmentService.getAllEquipments(1, 100),
-        userService.getAllUsers(1, 100),
-        sparePartService.getAllSpareParts(1, 100)
+        interventionService.getAllInterventions(1, 100).catch(() => ({ items: [] })),
+        equipmentService.getAllEquipments(1, 100).catch(() => ({ items: [] })),
+        userService.getAllUsers(1, 100).catch(() => ({ items: [] })),
+        sparePartService.getAllSpareParts(1, 100).catch(() => ({ items: [] }))
       ]);
       setInterventions(invData.items || (Array.isArray(invData) ? invData : []));
       setEquipments(eqData.items || (Array.isArray(eqData) ? eqData : []));
@@ -223,13 +223,13 @@ const Interventions = () => {
                         </button>
                       )}
                       
-                      {column.id === 'Assigned' && (user?.role === 'Admin' || user?.role === 'Manager' || user?.id === inv.technicianId) && (
+                      {column.id === 'Assigned' && (user?.role === 'Admin' || user?.role === 'Manager' || user?.id === inv.technicianUserId) && (
                         <button className="btn btn-primary btn-sm flex items-center gap-1" onClick={() => handleStart(inv.id)}>
                           <Play size={14}/> Démarrer
                         </button>
                       )}
 
-                      {column.id === 'InProgress' && (user?.role === 'Admin' || user?.role === 'Manager' || user?.id === inv.technicianId) && (
+                      {column.id === 'InProgress' && (user?.role === 'Admin' || user?.role === 'Manager' || user?.id === inv.technicianUserId) && (
                         <>
                           <button className="btn btn-secondary btn-sm flex items-center gap-1" title="Consommer pièce" onClick={() => { setSelectedIntervention(inv); setIsConsumeSpareOpen(true); }}>
                             <Package size={14}/> Pièce

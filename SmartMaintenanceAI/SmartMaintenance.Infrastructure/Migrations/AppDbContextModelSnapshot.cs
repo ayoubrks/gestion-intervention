@@ -17,7 +17,7 @@ namespace SmartMaintenance.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.10")
+                .HasAnnotation("ProductVersion", "9.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -473,7 +473,7 @@ namespace SmartMaintenance.Infrastructure.Migrations
                     b.HasOne("SmartMaintenance.Domain.Entities.User", "CreatedByUser")
                         .WithMany()
                         .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("SmartMaintenance.Domain.Entities.Equipment", "Equipment")
@@ -484,7 +484,8 @@ namespace SmartMaintenance.Infrastructure.Migrations
 
                     b.HasOne("SmartMaintenance.Domain.Entities.Technician", "Technician")
                         .WithMany("Interventions")
-                        .HasForeignKey("TechnicianId");
+                        .HasForeignKey("TechnicianId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("CreatedByUser");
 
@@ -498,7 +499,7 @@ namespace SmartMaintenance.Infrastructure.Migrations
                     b.HasOne("SmartMaintenance.Domain.Entities.User", "ChangedByUser")
                         .WithMany()
                         .HasForeignKey("ChangedByUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("SmartMaintenance.Domain.Entities.Intervention", "Intervention")

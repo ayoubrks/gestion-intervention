@@ -47,6 +47,25 @@ namespace SmartMaintenance.Infrastructure.Data
                 .WithOne(t => t.User)
                 .HasForeignKey<Technician>(t => t.UserId);
 
+            // Prevent multiple cascade paths for Intervention & InterventionHistory
+            modelBuilder.Entity<Intervention>()
+                .HasOne(i => i.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(i => i.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<InterventionHistory>()
+                .HasOne(h => h.ChangedByUser)
+                .WithMany()
+                .HasForeignKey(h => h.ChangedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Intervention>()
+                .HasOne(i => i.Technician)
+                .WithMany(t => t.Interventions)
+                .HasForeignKey(i => i.TechnicianId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             // Seed Data : Les 3 rôles de base
             modelBuilder.Entity<Role>().HasData(
                 new Role { Id = 1, Name = "Admin" },
