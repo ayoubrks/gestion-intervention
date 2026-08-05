@@ -4,47 +4,56 @@ import equipmentService from '../services/equipmentService';
 import userService from '../services/userService';
 import sparePartService from '../services/sparePartService';
 import { AuthContext } from '../context/AuthContext';
-import { Plus, Clock, User, AlertTriangle, Play, CheckCircle, X, History, Wrench, Package, Ban, Info } from 'lucide-react';
+import {
+  Plus, Wrench, User, Play, CheckCircle, X,
+  History, Package, Ban, Info, Inbox, RefreshCw, ClipboardCheck
+} from 'lucide-react';
 import './Interventions.css';
 
 const COLUMNS = [
-  { id: 'Pending', label: 'En attente', color: 'var(--status-pending)' },
-  { id: 'Assigned', label: 'Assigné', color: '#8b5cf6' },
-  { id: 'InProgress', label: 'En cours', color: 'var(--status-inprogress)' },
-  { id: 'Completed', label: 'Terminé', color: 'var(--status-completed)' },
-  { id: 'Cancelled', label: 'Annulé', color: '#ef4444' }
+  { id: 'Pending',    label: 'En attente', dotClass: 'status-dot-neutral', emptyIcon: <Inbox size={28}/>, emptyText: 'Aucune intervention en attente.' },
+  { id: 'Assigned',  label: 'Assigné',    dotClass: 'status-dot-purple',  emptyIcon: <User size={28}/>, emptyText: 'Aucune intervention assignée.' },
+  { id: 'InProgress',label: 'En cours',   dotClass: 'status-dot-accent',  emptyIcon: <RefreshCw size={28}/>, emptyText: 'Aucune intervention en cours.' },
+  { id: 'Completed', label: 'Terminé',    dotClass: 'status-dot-success', emptyIcon: <ClipboardCheck size={28}/>, emptyText: 'Aucune intervention terminée.' },
+  { id: 'Cancelled', label: 'Annulé',     dotClass: 'status-dot-error',   emptyIcon: <Ban size={28}/>, emptyText: 'Aucune intervention annulée.' },
 ];
+
+const PRIORITY_BADGE = {
+  High:   { label: 'Haute',   className: 'card-badge card-badge-high' },
+  Normal: { label: 'Normale', className: 'card-badge card-badge-normal' },
+  Low:    { label: 'Basse',   className: 'card-badge card-badge-low' },
+};
+
+const PRIORITY_COLOR = {
+  High: 'var(--red)', Normal: 'var(--blue)', Low: 'var(--green)',
+};
 
 const Interventions = () => {
   const { user } = useContext(AuthContext);
   const [interventions, setInterventions] = useState([]);
-  const [equipments, setEquipments] = useState([]);
-  const [technicians, setTechnicians] = useState([]);
+  const [equipments, setEquipments]     = useState([]);
+  const [technicians, setTechnicians]   = useState([]);
   const [allSpareParts, setAllSpareParts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  
-  // Modals state
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [isAssignOpen, setIsAssignOpen] = useState(false);
-  const [isCompleteOpen, setIsCompleteOpen] = useState(false);
-  const [isCancelOpen, setIsCancelOpen] = useState(false);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [loading, setLoading]           = useState(true);
+
+  const [isCreateOpen, setIsCreateOpen]           = useState(false);
+  const [isAssignOpen, setIsAssignOpen]           = useState(false);
+  const [isCompleteOpen, setIsCompleteOpen]       = useState(false);
+  const [isCancelOpen, setIsCancelOpen]           = useState(false);
+  const [isDetailsOpen, setIsDetailsOpen]         = useState(false);
   const [isConsumeSpareOpen, setIsConsumeSpareOpen] = useState(false);
-  
+
   const [selectedIntervention, setSelectedIntervention] = useState(null);
   const [historyLogs, setHistoryLogs] = useState([]);
-  const [usedParts, setUsedParts] = useState([]);
+  const [usedParts, setUsedParts]     = useState([]);
 
-  // Form states
-  const [createForm, setCreateForm] = useState({ title: '', description: '', priority: 'Normal', equipmentId: '' });
-  const [assignForm, setAssignForm] = useState({ technicianId: '', scheduledDate: '' });
+  const [createForm, setCreateForm]   = useState({ title: '', description: '', priority: 'Normal', equipmentId: '' });
+  const [assignForm, setAssignForm]   = useState({ technicianId: '', scheduledDate: '' });
   const [completeForm, setCompleteForm] = useState({ report: '', actualDurationMinutes: 60 });
   const [cancelReason, setCancelReason] = useState('');
   const [consumeForm, setConsumeForm] = useState({ sparePartId: '', quantityConsumed: 1 });
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     setLoading(true);
@@ -57,12 +66,11 @@ const Interventions = () => {
       ]);
       setInterventions(invData.items || (Array.isArray(invData) ? invData : []));
       setEquipments(eqData.items || (Array.isArray(eqData) ? eqData : []));
-      
       const userList = userData.items || (Array.isArray(userData) ? userData : []);
       setTechnicians(userList.filter(u => u.roleName === 'Technician' || u.role === 'Technician'));
       setAllSpareParts(partsData.items || (Array.isArray(partsData) ? partsData : []));
     } catch (error) {
-      console.error("Erreur de chargement", error);
+      console.error('Erreur de chargement', error);
     } finally {
       setLoading(false);
     }
@@ -71,15 +79,12 @@ const Interventions = () => {
   const handleCreate = async (e) => {
     e.preventDefault();
     try {
-      await interventionService.createIntervention({
-        ...createForm,
-        equipmentId: parseInt(createForm.equipmentId)
-      });
+      await interventionService.createIntervention({ ...createForm, equipmentId: parseInt(createForm.equipmentId) });
       setIsCreateOpen(false);
       setCreateForm({ title: '', description: '', priority: 'Normal', equipmentId: '' });
       fetchData();
     } catch (error) {
-      alert("Erreur création: " + (error.response?.data?.message || error.message));
+      alert('Erreur création: ' + (error.response?.data?.message || error.message));
     }
   };
 
@@ -88,48 +93,42 @@ const Interventions = () => {
     try {
       const formattedDate = assignForm.scheduledDate ? new Date(assignForm.scheduledDate).toISOString() : new Date().toISOString();
       await interventionService.assignTechnician(selectedIntervention.id, {
-        technicianId: parseInt(assignForm.technicianId),
-        scheduledDate: formattedDate
+        technicianId: parseInt(assignForm.technicianId), scheduledDate: formattedDate,
       });
       setIsAssignOpen(false);
       fetchData();
     } catch (error) {
-      alert("Erreur assignation: " + (error.response?.data?.message || error.message));
+      alert('Erreur assignation: ' + (error.response?.data?.message || error.message));
     }
   };
 
   const handleStart = async (id) => {
-    try {
-      await interventionService.startIntervention(id);
-      fetchData();
-    } catch (error) {
-      alert("Erreur démarrage: " + (error.response?.data?.message || error.message));
-    }
+    try { await interventionService.startIntervention(id); fetchData(); }
+    catch (error) { alert('Erreur démarrage: ' + (error.response?.data?.message || error.message)); }
   };
 
   const handleComplete = async (e) => {
     e.preventDefault();
     try {
       await interventionService.completeIntervention(selectedIntervention.id, {
-        report: completeForm.report,
-        actualDurationMinutes: parseInt(completeForm.actualDurationMinutes)
+        report: completeForm.report, actualDurationMinutes: parseInt(completeForm.actualDurationMinutes),
       });
       setIsCompleteOpen(false);
       fetchData();
     } catch (error) {
-      alert("Erreur complétion: " + (error.response?.data?.message || error.message));
+      alert('Erreur clôture: ' + (error.response?.data?.message || error.message));
     }
   };
 
   const handleCancel = async (e) => {
     e.preventDefault();
     try {
-      await interventionService.cancelIntervention(selectedIntervention.id, cancelReason);
+      await interventionService.cancelIntervention(selectedIntervention.id, { reason: cancelReason });
       setIsCancelOpen(false);
       setCancelReason('');
       fetchData();
     } catch (error) {
-      alert("Erreur annulation: " + (error.response?.data?.message || error.message));
+      alert('Erreur annulation: ' + (error.response?.data?.message || error.message));
     }
   };
 
@@ -137,17 +136,13 @@ const Interventions = () => {
     e.preventDefault();
     try {
       await sparePartService.consumeSparePart(selectedIntervention.id, {
-        sparePartId: parseInt(consumeForm.sparePartId),
-        quantityConsumed: parseInt(consumeForm.quantityConsumed)
+        sparePartId: parseInt(consumeForm.sparePartId), quantityConsumed: parseInt(consumeForm.quantityConsumed),
       });
       setIsConsumeSpareOpen(false);
       setConsumeForm({ sparePartId: '', quantityConsumed: 1 });
-      alert("Pièce de rechange ajoutée à l'intervention !");
-      if (selectedIntervention) {
-        openDetailsModal(selectedIntervention);
-      }
+      fetchData();
     } catch (error) {
-      alert("Erreur consommation pièce: " + (error.response?.data?.message || error.message));
+      alert('Erreur consommation pièce: ' + (error.response?.data?.message || error.message));
     }
   };
 
@@ -157,279 +152,375 @@ const Interventions = () => {
     try {
       const [hist, parts] = await Promise.all([
         interventionService.getInterventionHistory(inv.id),
-        sparePartService.getSparePartsUsedInIntervention(inv.id)
+        sparePartService.getSparePartsUsedInIntervention(inv.id),
       ]);
       setHistoryLogs(hist || []);
       setUsedParts(parts || []);
     } catch (err) {
-      console.error("Erreur chargement détails:", err);
+      console.error('Erreur chargement détails:', err);
     }
   };
 
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'High': return '#ef4444';
-      case 'Normal': return '#3b82f6';
-      case 'Low': return '#10b981';
-      default: return '#94a3b8';
-    }
-  };
+  const isAdminOrManager = user?.role === 'Admin' || user?.role === 'Manager';
+  const totalCount = interventions.length;
 
   return (
-    <div className="interventions-page flex-col h-full">
-      <div className="flex justify-between items-center mb-4">
-        <h1>Interventions (Kanban)</h1>
-        {(user?.role === 'Admin' || user?.role === 'Manager') && (
-          <button className="btn btn-primary" onClick={() => setIsCreateOpen(true)}>
-            <Plus size={18} />
-            Créer une intervention
+    <div className="interventions-page">
+
+      {/* ── Toolbar ── */}
+      <div className="page-toolbar">
+        <div className="page-toolbar-left">
+          <h1>Interventions</h1>
+          <span className="item-count-badge">{totalCount}</span>
+        </div>
+        {isAdminOrManager && (
+          <button className="btn btn-primary" onClick={() => setIsCreateOpen(true)} id="btn-create-intervention">
+            <Plus size={16} /> Créer une intervention
           </button>
         )}
       </div>
 
+      {/* ── Kanban Board ── */}
       <div className="kanban-board">
-        {COLUMNS.map(column => (
-          <div key={column.id} className="kanban-column glass-card">
-            <div className="column-header" style={{ borderBottomColor: column.color }}>
-              <h3>{column.label}</h3>
-              <span className="badge" style={{ backgroundColor: `${column.color}20`, color: column.color }}>
-                {interventions.filter(i => i.status === column.id).length}
-              </span>
-            </div>
-            
-            <div className="column-content">
-              {loading ? (
-                <div className="text-center text-muted p-4">Chargement...</div>
-              ) : (
-                interventions.filter(i => i.status === column.id).map(inv => (
-                  <div key={inv.id} className="kanban-card">
-                    <div className="card-priority" style={{ backgroundColor: getPriorityColor(inv.priority) }}></div>
-                    <div className="flex justify-between items-start">
-                      <h4>{inv.title}</h4>
-                      <button className="icon-btn" title="Détails" onClick={() => openDetailsModal(inv)}>
-                        <Info size={14} />
-                      </button>
-                    </div>
-                    <p className="eq-name flex items-center gap-1"><Wrench size={12}/> {inv.equipmentName}</p>
-                    {inv.technicianName && (
-                      <p className="tech-name flex items-center gap-1"><User size={12}/> {inv.technicianName}</p>
-                    )}
-                    
-                    {/* Action buttons based on status & role */}
-                    <div className="card-actions flex flex-wrap gap-2 mt-3">
-                      {column.id === 'Pending' && (user?.role === 'Admin' || user?.role === 'Manager') && (
-                        <button className="btn btn-secondary btn-sm" onClick={() => { setSelectedIntervention(inv); setIsAssignOpen(true); }}>
-                          Assigner
-                        </button>
-                      )}
-                      
-                      {column.id === 'Assigned' && (user?.role === 'Admin' || user?.role === 'Manager' || user?.id === inv.technicianUserId) && (
-                        <button className="btn btn-primary btn-sm flex items-center gap-1" onClick={() => handleStart(inv.id)}>
-                          <Play size={14}/> Démarrer
-                        </button>
-                      )}
+        {COLUMNS.map(column => {
+          const colItems = interventions.filter(i => i.status === column.id);
+          return (
+            <div key={column.id} className="kanban-column">
 
-                      {column.id === 'InProgress' && (user?.role === 'Admin' || user?.role === 'Manager' || user?.id === inv.technicianUserId) && (
-                        <>
-                          <button className="btn btn-secondary btn-sm flex items-center gap-1" title="Consommer pièce" onClick={() => { setSelectedIntervention(inv); setIsConsumeSpareOpen(true); }}>
-                            <Package size={14}/> Pièce
-                          </button>
-                          <button className="btn btn-success btn-sm flex items-center gap-1" onClick={() => { setSelectedIntervention(inv); setIsCompleteOpen(true); }}>
-                            <CheckCircle size={14}/> Terminer
-                          </button>
-                        </>
-                      )}
+              {/* Column Header */}
+              <div className="column-header">
+                <div className="column-header-left">
+                  <span className={`status-dot ${column.dotClass}`} />
+                  <h3>{column.label}</h3>
+                </div>
+                <span className="column-count">{colItems.length}</span>
+              </div>
 
-                      {(column.id === 'Pending' || column.id === 'Assigned' || column.id === 'InProgress') && (user?.role === 'Admin' || user?.role === 'Manager') && (
-                        <button className="btn btn-sm btn-danger-icon" title="Annuler" onClick={() => { setSelectedIntervention(inv); setIsCancelOpen(true); }}>
-                          <Ban size={14}/>
-                        </button>
-                      )}
-                    </div>
+              {/* Column Content */}
+              <div className="column-content">
+                {loading ? (
+                  <div className="skeleton-cards">
+                    <div className="skeleton-card" />
+                    <div className="skeleton-card" style={{ height: 70 }} />
+                    <div className="skeleton-card" style={{ height: 110 }} />
                   </div>
-                ))
-              )}
+                ) : colItems.length === 0 ? (
+                  <div className="column-empty">
+                    <span className="column-empty-icon">{column.emptyIcon}</span>
+                    <p>{column.emptyText}</p>
+                  </div>
+                ) : (
+                  colItems.map(inv => {
+                    const priority = PRIORITY_BADGE[inv.priority] || PRIORITY_BADGE.Normal;
+                    const stripeColor = PRIORITY_COLOR[inv.priority] || '#3b82f6';
+                    const isTechOwner = user?.id === inv.technicianUserId;
+                    const canAct = isAdminOrManager || isTechOwner;
+
+                    return (
+                      <div key={inv.id} className="kanban-card">
+                        <div className="card-priority-stripe" style={{ backgroundColor: stripeColor }} />
+
+                        {/* Top row: priority badge + info button */}
+                        <div className="card-top-row">
+                          <div className="card-badges">
+                            <span className={priority.className}>{priority.label}</span>
+                          </div>
+                          <button className="icon-btn" title="Détails" onClick={() => openDetailsModal(inv)} id={`btn-details-${inv.id}`}>
+                            <Info size={14} />
+                          </button>
+                        </div>
+
+                        {/* Title */}
+                        <div className="card-title">{inv.title}</div>
+
+                        {/* Meta */}
+                        <div className="card-meta">
+                          <span className="card-meta-item eq-name">
+                            <Wrench size={11} /> {inv.equipmentName}
+                          </span>
+                          {inv.technicianName && (
+                            <span className="card-meta-item tech-name">
+                              <User size={11} /> {inv.technicianName}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Actions */}
+                        {canAct && (
+                          <>
+                            <hr className="card-divider" />
+                            <div className="card-actions">
+                              {column.id === 'Pending' && isAdminOrManager && (
+                                <button className="card-btn card-btn-ghost" id={`btn-assign-${inv.id}`}
+                                  onClick={() => { setSelectedIntervention(inv); setIsAssignOpen(true); }}>
+                                  <User size={12} /> Assigner
+                                </button>
+                              )}
+                              {column.id === 'Assigned' && canAct && (
+                                <button className="card-btn card-btn-primary" id={`btn-start-${inv.id}`}
+                                  onClick={() => handleStart(inv.id)}>
+                                  <Play size={12} /> Démarrer
+                                </button>
+                              )}
+                              {column.id === 'InProgress' && canAct && (
+                                <>
+                                  <button className="card-btn card-btn-ghost" id={`btn-piece-${inv.id}`}
+                                    onClick={() => { setSelectedIntervention(inv); setIsConsumeSpareOpen(true); }}>
+                                    <Package size={12} /> Pièce
+                                  </button>
+                                  <button className="card-btn card-btn-success" id={`btn-complete-${inv.id}`}
+                                    onClick={() => { setSelectedIntervention(inv); setIsCompleteOpen(true); }}>
+                                    <CheckCircle size={12} /> Terminer
+                                  </button>
+                                </>
+                              )}
+                              {['Pending', 'Assigned', 'InProgress'].includes(column.id) && isAdminOrManager && (
+                                <button className="card-btn card-btn-danger icon-btn" title="Annuler" id={`btn-cancel-${inv.id}`}
+                                  onClick={() => { setSelectedIntervention(inv); setIsCancelOpen(true); }}>
+                                  <Ban size={12} />
+                                </button>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* Modal CREATE */}
+      {/* ══════════════════════════════════════════
+          MODAL — Créer
+      ══════════════════════════════════════════ */}
       {isCreateOpen && (
         <div className="modal-overlay">
-          <div className="modal-content glass-card animate-fade-in">
-            <div className="modal-header flex justify-between items-center mb-4">
-              <h3>Nouvelle Intervention</h3>
-              <button className="icon-btn" onClick={() => setIsCreateOpen(false)}><X size={20} /></button>
+          <div className="modal-panel animate-fade-in">
+            <div className="modal-header">
+              <h3>Nouvelle intervention</h3>
+              <button className="modal-close" onClick={() => setIsCreateOpen(false)}><X size={18}/></button>
             </div>
             <form onSubmit={handleCreate}>
-              <div className="form-group mb-3">
-                <label className="form-label">Titre</label>
-                <input required type="text" className="form-input" value={createForm.title} onChange={e => setCreateForm({...createForm, title: e.target.value})} placeholder="ex: Panne moteur principal" />
-              </div>
-              <div className="form-group mb-3">
-                <label className="form-label">Description</label>
-                <textarea required className="form-input" rows="3" value={createForm.description} onChange={e => setCreateForm({...createForm, description: e.target.value})} placeholder="Décrivez le problème constaté..."></textarea>
-              </div>
-              <div className="flex gap-4 mb-4">
-                <div className="form-group flex-1">
-                  <label className="form-label">Priorité</label>
-                  <select className="form-input" value={createForm.priority} onChange={e => setCreateForm({...createForm, priority: e.target.value})}>
-                    <option value="Low">Basse</option>
-                    <option value="Normal">Normale</option>
-                    <option value="High">Haute</option>
-                  </select>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label className="form-label">Titre</label>
+                  <input required type="text" className="form-input" placeholder="ex: Panne moteur principal"
+                    value={createForm.title} onChange={e => setCreateForm({...createForm, title: e.target.value})} />
                 </div>
-                <div className="form-group flex-1">
-                  <label className="form-label">Équipement</label>
-                  <select required className="form-input" value={createForm.equipmentId} onChange={e => setCreateForm({...createForm, equipmentId: e.target.value})}>
-                    <option value="" disabled>Sélectionner...</option>
-                    {equipments.map(eq => <option key={eq.id} value={eq.id}>{eq.name}</option>)}
-                  </select>
+                <div className="form-group">
+                  <label className="form-label">Description</label>
+                  <textarea required className="form-input" rows="3" placeholder="Décrivez le problème constaté..."
+                    value={createForm.description} onChange={e => setCreateForm({...createForm, description: e.target.value})} />
+                </div>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <div className="form-group" style={{ flex: 1 }}>
+                    <label className="form-label">Priorité</label>
+                    <select className="form-input" value={createForm.priority} onChange={e => setCreateForm({...createForm, priority: e.target.value})}>
+                      <option value="Low">Basse</option>
+                      <option value="Normal">Normale</option>
+                      <option value="High">Haute</option>
+                    </select>
+                  </div>
+                  <div className="form-group" style={{ flex: 1 }}>
+                    <label className="form-label">Équipement</label>
+                    <select required className="form-input" value={createForm.equipmentId} onChange={e => setCreateForm({...createForm, equipmentId: e.target.value})}>
+                      <option value="" disabled>Sélectionner...</option>
+                      {equipments.map(eq => <option key={eq.id} value={eq.id}>{eq.name}</option>)}
+                    </select>
+                  </div>
                 </div>
               </div>
-              <div className="modal-footer flex justify-between mt-4">
+              <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setIsCreateOpen(false)}>Annuler</button>
-                <button type="submit" className="btn btn-primary">Créer</button>
+                <button type="submit" className="btn btn-primary" id="btn-create-submit">Créer</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Modal ASSIGN */}
+      {/* ══════════════════════════════════════════
+          MODAL — Assigner
+      ══════════════════════════════════════════ */}
       {isAssignOpen && selectedIntervention && (
         <div className="modal-overlay">
-          <div className="modal-content glass-card animate-fade-in">
-            <div className="modal-header flex justify-between items-center mb-4">
-              <h3>Assigner un technicien ({selectedIntervention.title})</h3>
-              <button className="icon-btn" onClick={() => setIsAssignOpen(false)}><X size={20} /></button>
+          <div className="modal-panel animate-fade-in">
+            <div className="modal-header">
+              <h3>Assigner un technicien</h3>
+              <button className="modal-close" onClick={() => setIsAssignOpen(false)}><X size={18}/></button>
             </div>
             <form onSubmit={handleAssign}>
-              <div className="form-group mb-3">
-                <label className="form-label">Technicien</label>
-                <select required className="form-input" value={assignForm.technicianId} onChange={e => setAssignForm({...assignForm, technicianId: e.target.value})}>
-                  <option value="" disabled>Sélectionner...</option>
-                  {technicians.map(t => <option key={t.id} value={t.id}>{t.username} ({t.email})</option>)}
-                </select>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label className="form-label">Technicien</label>
+                  <select required className="form-input" value={assignForm.technicianId}
+                    onChange={e => setAssignForm({...assignForm, technicianId: e.target.value})}>
+                    <option value="" disabled>Sélectionner...</option>
+                    {technicians.map(t => <option key={t.id} value={t.id}>{t.username} ({t.email})</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Date prévue</label>
+                  <input required type="datetime-local" className="form-input"
+                    value={assignForm.scheduledDate} onChange={e => setAssignForm({...assignForm, scheduledDate: e.target.value})} />
+                </div>
               </div>
-              <div className="form-group mb-4">
-                <label className="form-label">Date prévue</label>
-                <input required type="datetime-local" className="form-input" value={assignForm.scheduledDate} onChange={e => setAssignForm({...assignForm, scheduledDate: e.target.value})} />
-              </div>
-              <div className="modal-footer flex justify-between mt-4">
+              <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setIsAssignOpen(false)}>Annuler</button>
-                <button type="submit" className="btn btn-primary">Assigner</button>
+                <button type="submit" className="btn btn-primary" id="btn-assign-submit">Assigner</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Modal COMPLETE */}
+      {/* ══════════════════════════════════════════
+          MODAL — Clôturer
+      ══════════════════════════════════════════ */}
       {isCompleteOpen && selectedIntervention && (
         <div className="modal-overlay">
-          <div className="modal-content glass-card animate-fade-in">
-            <div className="modal-header flex justify-between items-center mb-4">
+          <div className="modal-panel animate-fade-in">
+            <div className="modal-header">
               <h3>Clôturer l'intervention</h3>
-              <button className="icon-btn" onClick={() => setIsCompleteOpen(false)}><X size={20} /></button>
+              <button className="modal-close" onClick={() => setIsCompleteOpen(false)}><X size={18}/></button>
             </div>
             <form onSubmit={handleComplete}>
-              <div className="form-group mb-3">
-                <label className="form-label">Rapport final</label>
-                <textarea required className="form-input" rows="4" value={completeForm.report} onChange={e => setCompleteForm({...completeForm, report: e.target.value})} placeholder="Décrivez les actions réalisées..."></textarea>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label className="form-label">Rapport final</label>
+                  <textarea required className="form-input" rows="4" placeholder="Décrivez les actions réalisées..."
+                    value={completeForm.report} onChange={e => setCompleteForm({...completeForm, report: e.target.value})} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Durée réelle (minutes)</label>
+                  <input required type="number" min="1" className="form-input"
+                    value={completeForm.actualDurationMinutes} onChange={e => setCompleteForm({...completeForm, actualDurationMinutes: e.target.value})} />
+                </div>
               </div>
-              <div className="form-group mb-4">
-                <label className="form-label">Durée réelle (minutes)</label>
-                <input required type="number" min="1" className="form-input" value={completeForm.actualDurationMinutes} onChange={e => setCompleteForm({...completeForm, actualDurationMinutes: e.target.value})} />
-              </div>
-              <div className="modal-footer flex justify-between mt-4">
+              <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setIsCompleteOpen(false)}>Annuler</button>
-                <button type="submit" className="btn btn-success">Clôturer</button>
+                <button type="submit" className="btn btn-primary" id="btn-complete-submit"
+                  style={{ background: 'var(--green-subtle)', color: 'var(--green)', borderColor: 'var(--green-border)', boxShadow: '0 4px 12px var(--green-subtle)' }}>
+                  <CheckCircle size={14}/> Clôturer
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Modal CANCEL */}
+      {/* ══════════════════════════════════════════
+          MODAL — Annuler
+      ══════════════════════════════════════════ */}
       {isCancelOpen && selectedIntervention && (
         <div className="modal-overlay">
-          <div className="modal-content glass-card animate-fade-in" style={{ maxWidth: '400px' }}>
-            <div className="modal-header flex justify-between items-center mb-4">
+          <div className="modal-panel modal-panel-sm animate-fade-in">
+            <div className="modal-header">
               <h3>Annuler l'intervention</h3>
-              <button className="icon-btn" onClick={() => setIsCancelOpen(false)}><X size={20} /></button>
+              <button className="modal-close" onClick={() => setIsCancelOpen(false)}><X size={18}/></button>
             </div>
             <form onSubmit={handleCancel}>
-              <div className="form-group mb-4">
-                <label className="form-label">Motif d'annulation</label>
-                <textarea required className="form-input" rows="3" value={cancelReason} onChange={e => setCancelReason(e.target.value)} placeholder="Raison de l'annulation..."></textarea>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label className="form-label">Motif d'annulation</label>
+                  <textarea required className="form-input" rows="3" placeholder="Raison de l'annulation..."
+                    value={cancelReason} onChange={e => setCancelReason(e.target.value)} />
+                </div>
               </div>
-              <div className="modal-footer flex justify-between mt-4">
+              <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setIsCancelOpen(false)}>Fermer</button>
-                <button type="submit" className="btn btn-danger-icon" style={{ padding: '8px 16px', background: '#ef4444', color: '#fff', borderRadius: '8px' }}>Confirmer l'annulation</button>
+                <button type="submit" className="btn btn-danger" id="btn-cancel-submit">
+                  <Ban size={14}/> Confirmer
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Modal CONSUME SPARE PART */}
+      {/* ══════════════════════════════════════════
+          MODAL — Pièce de rechange
+      ══════════════════════════════════════════ */}
       {isConsumeSpareOpen && selectedIntervention && (
         <div className="modal-overlay">
-          <div className="modal-content glass-card animate-fade-in" style={{ maxWidth: '400px' }}>
-            <div className="modal-header flex justify-between items-center mb-4">
+          <div className="modal-panel modal-panel-sm animate-fade-in">
+            <div className="modal-header">
               <h3>Utiliser une pièce de rechange</h3>
-              <button className="icon-btn" onClick={() => setIsConsumeSpareOpen(false)}><X size={20} /></button>
+              <button className="modal-close" onClick={() => setIsConsumeSpareOpen(false)}><X size={18}/></button>
             </div>
             <form onSubmit={handleConsumeSparePart}>
-              <div className="form-group mb-3">
-                <label className="form-label">Pièce de rechange</label>
-                <select required className="form-input" value={consumeForm.sparePartId} onChange={e => setConsumeForm({...consumeForm, sparePartId: e.target.value})}>
-                  <option value="" disabled>Sélectionner la pièce...</option>
-                  {allSpareParts.map(p => (
-                    <option key={p.id} value={p.id}>{p.name} (Stock: {p.stockQuantity})</option>
-                  ))}
-                </select>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label className="form-label">Pièce de rechange</label>
+                  <select required className="form-input" value={consumeForm.sparePartId}
+                    onChange={e => setConsumeForm({...consumeForm, sparePartId: e.target.value})}>
+                    <option value="" disabled>Sélectionner la pièce...</option>
+                    {allSpareParts.map(p => (
+                      <option key={p.id} value={p.id}>{p.name} (Stock: {p.stockQuantity})</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Quantité consommée</label>
+                  <input required type="number" min="1" className="form-input"
+                    value={consumeForm.quantityConsumed} onChange={e => setConsumeForm({...consumeForm, quantityConsumed: e.target.value})} />
+                </div>
               </div>
-              <div className="form-group mb-4">
-                <label className="form-label">Quantité consommée</label>
-                <input required type="number" min="1" className="form-input" value={consumeForm.quantityConsumed} onChange={e => setConsumeForm({...consumeForm, quantityConsumed: e.target.value})} />
-              </div>
-              <div className="modal-footer flex justify-between mt-4">
+              <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setIsConsumeSpareOpen(false)}>Annuler</button>
-                <button type="submit" className="btn btn-primary">Ajouter</button>
+                <button type="submit" className="btn btn-primary" id="btn-consume-submit">Ajouter</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Modal DETAILS & HISTORY */}
+      {/* ══════════════════════════════════════════
+          MODAL — Détails & Historique
+      ══════════════════════════════════════════ */}
       {isDetailsOpen && selectedIntervention && (
         <div className="modal-overlay">
-          <div className="modal-content glass-card animate-fade-in" style={{ maxWidth: '600px' }}>
-            <div className="modal-header flex justify-between items-center mb-4">
-              <h3>Détails de l'Intervention #{selectedIntervention.id}</h3>
-              <button className="icon-btn" onClick={() => setIsDetailsOpen(false)}><X size={20} /></button>
+          <div className="modal-panel modal-panel-lg animate-fade-in">
+            <div className="modal-header">
+              <h3>Intervention #{selectedIntervention.id}</h3>
+              <button className="modal-close" onClick={() => setIsDetailsOpen(false)}><X size={18}/></button>
             </div>
-            <div className="details-body">
-              <h4>{selectedIntervention.title}</h4>
-              <p className="text-muted mb-3">{selectedIntervention.description}</p>
-              
-              <div className="grid grid-2 gap-4 mb-4 glass-card p-3">
-                <div><strong>Équipement:</strong> {selectedIntervention.equipmentName}</div>
-                <div><strong>Technicien:</strong> {selectedIntervention.technicianName || 'Non assigné'}</div>
-                <div><strong>Statut:</strong> <span className="badge">{selectedIntervention.status}</span></div>
-                <div><strong>Priorité:</strong> <span style={{ color: getPriorityColor(selectedIntervention.priority) }}>{selectedIntervention.priority}</span></div>
+            <div className="modal-body">
+              <div>
+                <div style={{ fontWeight: 600, fontSize: '1rem', marginBottom: 6 }}>{selectedIntervention.title}</div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 16 }}>{selectedIntervention.description}</div>
+              </div>
+
+              <div className="details-grid">
+                <div className="details-grid-item">
+                  <strong>Équipement</strong>
+                  <span>{selectedIntervention.equipmentName}</span>
+                </div>
+                <div className="details-grid-item">
+                  <strong>Technicien</strong>
+                  <span>{selectedIntervention.technicianName || 'Non assigné'}</span>
+                </div>
+                <div className="details-grid-item">
+                  <strong>Statut</strong>
+                  <span>{selectedIntervention.status}</span>
+                </div>
+                <div className="details-grid-item">
+                  <strong>Priorité</strong>
+                  <span style={{ color: PRIORITY_COLOR[selectedIntervention.priority] || 'inherit' }}>
+                    {selectedIntervention.priority}
+                  </span>
+                </div>
               </div>
 
               {usedParts.length > 0 && (
-                <div className="mb-4">
-                  <h5><Package size={16}/> Pièces utilisées ({usedParts.length}) :</h5>
-                  <ul style={{ paddingLeft: '20px' }}>
+                <div>
+                  <div className="section-label"><Package size={13}/> Pièces utilisées ({usedParts.length})</div>
+                  <ul style={{ paddingLeft: 18, fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
                     {usedParts.map((p, idx) => (
-                      <li key={idx}>{p.sparePartName || p.name} - Quantité: {p.quantityConsumed || p.quantity}</li>
+                      <li key={idx}>{p.sparePartName || p.name} — Quantité : {p.quantityConsumed || p.quantity}</li>
                     ))}
                   </ul>
                 </div>
@@ -437,16 +528,21 @@ const Interventions = () => {
 
               {historyLogs.length > 0 && (
                 <div>
-                  <h5><History size={16}/> Historique des événements :</h5>
-                  <div style={{ maxHeight: '150px', overflowY: 'auto', background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '8px' }}>
+                  <div className="section-label"><History size={13}/> Historique</div>
+                  <div className="history-log">
                     {historyLogs.map((log, idx) => (
-                      <div key={idx} style={{ fontSize: '0.85rem', marginBottom: '6px', borderBottom: '1px dotted var(--glass-border)', paddingBottom: '4px' }}>
-                        <span className="text-muted">{new Date(log.timestamp || log.createdAt).toLocaleString()} :</span> <strong>{log.action || log.status}</strong> - {log.details || log.comment}
+                      <div key={idx} className="history-log-item">
+                        <div className="log-time">{new Date(log.timestamp || log.createdAt).toLocaleString()}</div>
+                        <span className="log-action">{log.action || log.status}</span>
+                        {(log.details || log.comment) && <span style={{ color: 'var(--text-muted)' }}> — {log.details || log.comment}</span>}
                       </div>
                     ))}
                   </div>
                 </div>
               )}
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setIsDetailsOpen(false)}>Fermer</button>
             </div>
           </div>
         </div>

@@ -131,7 +131,7 @@ const Users = () => {
         </button>
       </div>
 
-      <div className="glass-card mb-4 filter-bar flex gap-4">
+      <div className="card mb-4 filter-bar flex gap-4">
         <div className="input-with-icon" style={{ flex: 1 }}>
           <Search size={18} className="input-icon" />
           <input 
@@ -159,10 +159,10 @@ const Users = () => {
 
       {error && <div className="login-error mb-4">{error}</div>}
 
-      <div className="glass-card" style={{ padding: '0', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+      <div className="card table-container" style={{ padding: '0', overflow: 'hidden' }}>
+        <table className="app-table">
           <thead>
-            <tr style={{ borderBottom: '1px solid var(--glass-border)', backgroundColor: 'rgba(255,255,255,0.02)' }}>
+            <tr>
               <th style={{ padding: '16px 24px', color: 'var(--text-secondary)', fontWeight: 500 }}>Nom d'utilisateur</th>
               <th style={{ padding: '16px 24px', color: 'var(--text-secondary)', fontWeight: 500 }}>Email</th>
               <th style={{ padding: '16px 24px', color: 'var(--text-secondary)', fontWeight: 500 }}>Rôle</th>
@@ -176,10 +176,10 @@ const Users = () => {
               <tr><td colSpan="4" style={{ padding: '24px', textAlign: 'center' }}>Aucun utilisateur trouvé</td></tr>
             ) : (
               users.map(u => (
-                <tr key={u.id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
+                <tr key={u.id}>
                   <td style={{ padding: '16px 24px' }}>
                     <div className="flex items-center gap-2">
-                      <div className="avatar" style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><User size={16}/></div>
+                      <div className="avatar" style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><User size={16}/></div>
                       <strong>{u.username}</strong>
                     </div>
                   </td>
@@ -205,12 +205,13 @@ const Users = () => {
       {/* Modal CREATE USER */}
       {isCreateModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-content glass-card animate-fade-in">
-            <div className="modal-header flex justify-between items-center mb-4">
+          <div className="modal-panel animate-fade-in">
+            <div className="modal-header">
               <h3>Créer un Utilisateur</h3>
-              <button className="icon-btn" onClick={() => setIsCreateModalOpen(false)}><X size={20} /></button>
+              <button className="modal-close" onClick={() => setIsCreateModalOpen(false)}><X size={20} /></button>
             </div>
             <form onSubmit={handleCreate}>
+              <div className="modal-body">
               <div className="form-group mb-3">
                 <label className="form-label">Nom d'utilisateur</label>
                 <input required type="text" className="form-input" value={createForm.username} onChange={e => setCreateForm({...createForm, username: e.target.value})} placeholder="ex: jdupont" />
@@ -231,7 +232,8 @@ const Users = () => {
                   ))}
                 </select>
               </div>
-              <div className="modal-footer flex justify-between mt-4">
+              </div>
+              <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setIsCreateModalOpen(false)}>Annuler</button>
                 <button type="submit" className="btn btn-primary">Créer</button>
               </div>
@@ -243,12 +245,13 @@ const Users = () => {
       {/* Modal EDIT USER */}
       {isEditModalOpen && editingUser && (
         <div className="modal-overlay">
-          <div className="modal-content glass-card animate-fade-in">
-            <div className="modal-header flex justify-between items-center mb-4">
+          <div className="modal-panel animate-fade-in">
+            <div className="modal-header">
               <h3>Modifier l'utilisateur ({editingUser.username})</h3>
-              <button className="icon-btn" onClick={() => setIsEditModalOpen(false)}><X size={20} /></button>
+              <button className="modal-close" onClick={() => setIsEditModalOpen(false)}><X size={20} /></button>
             </div>
             <form onSubmit={handleEdit}>
+              <div className="modal-body">
               <div className="form-group mb-3">
                 <label className="form-label">Nom d'utilisateur</label>
                 <input required type="text" className="form-input" value={editForm.username} onChange={e => setEditForm({...editForm, username: e.target.value})} />
@@ -269,7 +272,8 @@ const Users = () => {
                   ))}
                 </select>
               </div>
-              <div className="modal-footer flex justify-between mt-4">
+              </div>
+              <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setIsEditModalOpen(false)}>Annuler</button>
                 <button type="submit" className="btn btn-primary">Enregistrer</button>
               </div>

@@ -138,7 +138,7 @@ const SpareParts = () => {
       </div>
 
       {lowStockCount > 0 && !lowStockOnly && (
-        <div className="glass-card mb-4 p-3 flex justify-between items-center" style={{ borderLeft: '4px solid #ef4444', background: 'rgba(239, 68, 68, 0.1)' }}>
+        <div className="card mb-4 p-3 flex justify-between items-center" style={{ borderLeft: '4px solid var(--red)', background: 'var(--red-subtle)' }}>
           <div className="flex items-center gap-2" style={{ color: '#ef4444' }}>
             <AlertTriangle size={20} />
             <strong>Alerte Stock Bas : {lowStockCount} pièce(s) nécessite(nt) un réapprovisionnement !</strong>
@@ -149,7 +149,7 @@ const SpareParts = () => {
         </div>
       )}
 
-      <div className="glass-card mb-4 filter-bar flex justify-between items-center gap-4">
+      <div className="card mb-4 filter-bar flex justify-between items-center gap-4">
         <div className="input-with-icon" style={{ flex: 1 }}>
           <Search size={18} className="input-icon" />
           <input 
@@ -170,10 +170,10 @@ const SpareParts = () => {
         </label>
       </div>
 
-      <div className="glass-card table-container" style={{ padding: '0', overflow: 'hidden' }}>
-        <table className="app-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <div className="card table-container" style={{ padding: '0', overflow: 'hidden' }}>
+        <table className="app-table">
           <thead>
-            <tr style={{ borderBottom: '1px solid var(--glass-border)', backgroundColor: 'rgba(255,255,255,0.02)' }}>
+            <tr>
               <th style={{ padding: '16px' }}>Référence</th>
               <th style={{ padding: '16px' }}>Désignation</th>
               <th style={{ padding: '16px' }}>Coût Unitaire</th>
@@ -192,7 +192,7 @@ const SpareParts = () => {
               parts.map(part => {
                 const isLow = part.isLowStock || part.stockQuantity <= part.minimumThreshold;
                 return (
-                  <tr key={part.id} style={{ borderBottom: '1px solid var(--glass-border)', background: isLow ? 'rgba(239, 68, 68, 0.04)' : 'transparent' }}>
+                  <tr key={part.id} style={{ background: isLow ? 'var(--red-subtle)' : 'transparent' }}>
                     <td style={{ padding: '16px', fontWeight: 600 }}>{part.reference}</td>
                     <td style={{ padding: '16px' }}>
                       <div>
@@ -205,11 +205,11 @@ const SpareParts = () => {
                     <td style={{ padding: '16px' }}>{part.minimumThreshold}</td>
                     <td style={{ padding: '16px' }}>
                       {isLow ? (
-                        <span className="badge badge-cancelled flex items-center gap-1" style={{ color: '#ef4444', background: 'rgba(239,68,68,0.15)' }}>
+                        <span className="badge badge-cancelled flex items-center gap-1">
                           <AlertTriangle size={12} /> Stock Bas
                         </span>
                       ) : (
-                        <span className="badge badge-completed" style={{ color: '#10b981', background: 'rgba(16,185,129,0.15)' }}>Correct</span>
+                        <span className="badge badge-completed">Correct</span>
                       )}
                     </td>
                     <td style={{ padding: '16px' }}>
@@ -242,12 +242,13 @@ const SpareParts = () => {
       {/* Modal Add/Edit */}
       {isModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-content glass-card animate-fade-in">
-            <div className="modal-header flex justify-between items-center mb-4">
+          <div className="modal-panel animate-fade-in">
+            <div className="modal-header">
               <h3>{editingPart ? 'Modifier la pièce' : 'Nouvelle Pièce de Rechange'}</h3>
-              <button className="icon-btn" onClick={() => setIsModalOpen(false)}><X size={20} /></button>
+              <button className="modal-close" onClick={() => setIsModalOpen(false)}><X size={20} /></button>
             </div>
             <form onSubmit={handleFormSubmit}>
+              <div className="modal-body">
               <div className="form-group mb-3">
                 <label className="form-label">Désignation / Nom</label>
                 <input required type="text" className="form-input" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="ex: Joint d'étanchéité 50mm" />
@@ -274,7 +275,8 @@ const SpareParts = () => {
                   <input required type="number" min="0" className="form-input" value={formData.minimumThreshold} onChange={e => setFormData({...formData, minimumThreshold: e.target.value})} />
                 </div>
               </div>
-              <div className="modal-footer flex justify-between mt-4">
+              </div>
+              <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>Annuler</button>
                 <button type="submit" className="btn btn-primary">Enregistrer</button>
               </div>
@@ -286,12 +288,13 @@ const SpareParts = () => {
       {/* Modal Adjust Stock */}
       {isAdjustOpen && selectedPart && (
         <div className="modal-overlay">
-          <div className="modal-content glass-card animate-fade-in" style={{ maxWidth: '380px' }}>
-            <div className="modal-header flex justify-between items-center mb-4">
+          <div className="modal-panel modal-panel-sm animate-fade-in">
+            <div className="modal-header">
               <h3>Ajuster le Stock</h3>
-              <button className="icon-btn" onClick={() => setIsAdjustOpen(false)}><X size={20} /></button>
+              <button className="modal-close" onClick={() => setIsAdjustOpen(false)}><X size={20} /></button>
             </div>
             <form onSubmit={handleAdjustStock}>
+              <div className="modal-body">
               <div className="form-group text-center mb-4">
                 <h4>{selectedPart.name}</h4>
                 <p className="text-muted">Référence: {selectedPart.reference}</p>
@@ -301,7 +304,8 @@ const SpareParts = () => {
                 <label className="form-label">Ajustement (ex: +5 pour un ajout, -3 pour un retrait)</label>
                 <input required type="number" className="form-input text-center" style={{ fontSize: '1.5rem', fontWeight: 'bold' }} value={adjustQty} onChange={e => setAdjustQty(e.target.value)} />
               </div>
-              <div className="modal-footer flex justify-between mt-4">
+              </div>
+              <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setIsAdjustOpen(false)}>Annuler</button>
                 <button type="submit" className="btn btn-primary">Appliquer</button>
               </div>

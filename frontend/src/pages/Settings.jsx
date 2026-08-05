@@ -47,7 +47,7 @@ const Settings = () => {
       </div>
 
       {saveSuccess && (
-        <div className="glass-card p-3 flex items-center gap-2 animate-fade-in" style={{ borderLeft: '4px solid #10b981', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
+        <div className="card p-3 flex items-center gap-2 animate-fade-in" style={{ borderLeft: '4px solid var(--green)', background: 'var(--green-subtle)', color: 'var(--green)' }}>
           <CheckCircle size={20} />
           <strong>Paramètres enregistrés avec succès !</strong>
         </div>
@@ -55,7 +55,7 @@ const Settings = () => {
 
       <div className="settings-grid">
         {/* Navigation gauche */}
-        <div className="glass-card settings-nav">
+        <div className="card settings-nav">
           <button 
             className={`settings-nav-item ${activeTab === 'profile' ? 'active' : ''}`}
             onClick={() => setActiveTab('profile')}
@@ -83,13 +83,13 @@ const Settings = () => {
         </div>
 
         {/* Contenu principal */}
-        <div className="glass-card settings-content-card">
+        <div className="card settings-content-card">
           {activeTab === 'profile' && (
             <div>
               <h3 className="settings-section-title flex items-center gap-2"><User size={20}/> Informations de Profil</h3>
               
-              <div className="glass-card p-4 mb-4 flex items-center gap-4">
-                <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 'bold', color: '#fff' }}>
+              <div className="card p-4 mb-4 flex items-center gap-4">
+                <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 'bold', color: '#fff' }}>
                   {user?.username ? user.username[0].toUpperCase() : 'U'}
                 </div>
                 <div>
@@ -237,28 +237,28 @@ const Settings = () => {
               <h3 className="settings-section-title flex items-center gap-2"><Server size={20}/> Informations & Diagnostic Système</h3>
               
               <div className="grid grid-2 gap-4 mb-4">
-                <div className="glass-card p-3">
+                <div className="card p-3">
                   <div className="flex items-center gap-2 text-muted mb-1"><Activity size={16}/> API Backend (.NET 10.0)</div>
-                  <div style={{ color: '#10b981', fontWeight: 'bold' }}>Connecté & Opérationnel</div>
+                  <div style={{ color: 'var(--green)', fontWeight: 'bold' }}>Connecté & Opérationnel</div>
                 </div>
 
-                <div className="glass-card p-3">
+                <div className="card p-3">
                   <div className="flex items-center gap-2 text-muted mb-1"><Database size={16}/> Base de Données (SQLite)</div>
-                  <div style={{ color: '#10b981', fontWeight: 'bold' }}>SmartMaintenanceDb.db (Opérationnel)</div>
+                  <div style={{ color: 'var(--green)', fontWeight: 'bold' }}>SmartMaintenanceDb.db (Opérationnel)</div>
                 </div>
 
-                <div className="glass-card p-3">
+                <div className="card p-3">
                   <div className="flex items-center gap-2 text-muted mb-1"><Sliders size={16}/> Version Application</div>
                   <div style={{ fontWeight: 'bold' }}>SmartMaintenanceAI v2.4.0</div>
                 </div>
 
-                <div className="glass-card p-3">
+                <div className="card p-3">
                   <div className="flex items-center gap-2 text-muted mb-1"><Shield size={16}/> Environnement</div>
                   <div style={{ fontWeight: 'bold' }}>Développement / Local</div>
                 </div>
               </div>
 
-              <div className="glass-card p-3 mt-4">
+              <div className="card p-3 mt-4">
                 <h4>Modules Actifs :</h4>
                 <div className="flex flex-wrap gap-2 mt-2">
                   <span className="badge badge-completed">Interventions (Kanban)</span>

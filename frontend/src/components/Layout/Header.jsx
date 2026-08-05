@@ -1,17 +1,16 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import notificationService from '../../services/notificationService';
-import { Bell, Search, User, LogOut, CheckCheck, AlertCircle } from 'lucide-react';
+import { Bell, Search, LogOut, CheckCheck, AlertCircle } from 'lucide-react';
 import './Header.css';
 
 const Header = () => {
   const { user, logout } = useContext(AuthContext);
   const [notifications, setNotifications] = useState([]);
-  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [isNotifOpen, setIsNotifOpen]     = useState(false);
 
   useEffect(() => {
     fetchNotifications();
-    // Poll notifications every 30 seconds for live updates
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -21,98 +20,92 @@ const Header = () => {
       const data = await notificationService.getNotifications();
       setNotifications(data || []);
     } catch (err) {
-      console.error("Erreur chargement notifications:", err);
+      console.error('Erreur notifications:', err);
     }
   };
 
-  const handleMarkAllRead = async () => {
-    try {
-      await notificationService.markAllAsRead();
-      fetchNotifications();
-    } catch (err) {
-      console.error("Erreur marquer tout comme lu:", err);
-    }
+  const handleMarkAll = async () => {
+    try { await notificationService.markAllAsRead(); fetchNotifications(); }
+    catch (err) { console.error(err); }
   };
 
-  const handleMarkAsRead = async (id) => {
-    try {
-      await notificationService.markAsRead(id);
-      fetchNotifications();
-    } catch (err) {
-      console.error("Erreur marquer comme lu:", err);
-    }
+  const handleMarkOne = async (id) => {
+    try { await notificationService.markAsRead(id); fetchNotifications(); }
+    catch (err) { console.error(err); }
   };
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
+  const initials = user?.username ? user.username.slice(0, 2).toUpperCase() : '?';
 
   return (
-    <header className="header glass-panel">
+    <header className="header">
+      {/* Search */}
       <div className="header-search">
-        <div className="search-input-container">
-          <Search size={18} className="search-icon" />
-          <input 
-            type="text" 
-            placeholder="Rechercher équipement, intervention..." 
+        <div className="search-wrap">
+          <Search size={15} className="search-icon" />
+          <input
+            type="text"
+            placeholder="Rechercher équipement, intervention..."
             className="search-input"
           />
         </div>
       </div>
-      
+
       <div className="header-actions">
-        {/* Notifications Dropdown */}
-        <div className="notification-container">
-          <button className="icon-btn" title="Notifications" onClick={() => setIsNotifOpen(!isNotifOpen)}>
-            <Bell size={20} />
-            {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
+        {/* Notifications */}
+        <div className="notif-container">
+          <button
+            className="notif-trigger"
+            onClick={() => setIsNotifOpen(o => !o)}
+            title="Notifications"
+          >
+            <Bell size={17} />
+            {unreadCount > 0 && <span className="notif-badge">{unreadCount}</span>}
           </button>
 
           {isNotifOpen && (
-            <div className="notification-dropdown">
-              <div className="notification-header">
-                <h4>Notifications ({unreadCount} non lues)</h4>
+            <div className="notif-dropdown">
+              <div className="notif-dropdown-header">
+                <h4>Notifications {unreadCount > 0 && `(${unreadCount})`}</h4>
                 {unreadCount > 0 && (
-                  <button className="mark-all-btn flex items-center gap-1" onClick={handleMarkAllRead}>
-                    <CheckCheck size={14}/> Tout marquer comme lu
+                  <button className="notif-mark-all" onClick={handleMarkAll}>
+                    <CheckCheck size={12} /> Tout lire
                   </button>
                 )}
               </div>
-              <div className="notification-list">
+              <div className="notif-list">
                 {notifications.length === 0 ? (
-                  <div className="p-4 text-center text-muted flex flex-col items-center gap-2">
-                    <AlertCircle size={24}/>
+                  <div className="notif-empty">
+                    <AlertCircle size={22} />
                     <span>Aucune notification</span>
                   </div>
-                ) : (
-                  notifications.map(n => (
-                    <div 
-                      key={n.id} 
-                      className={`notification-item ${!n.isRead ? 'unread' : ''}`}
-                      onClick={() => handleMarkAsRead(n.id)}
-                    >
-                      <div>{n.message}</div>
-                      <span className="notification-time">{new Date(n.createdAt).toLocaleString()}</span>
-                    </div>
-                  ))
-                )}
+                ) : notifications.map(n => (
+                  <div
+                    key={n.id}
+                    className={`notif-item ${!n.isRead ? 'unread' : ''}`}
+                    onClick={() => handleMarkOne(n.id)}
+                  >
+                    <div className="notif-message">{n.message}</div>
+                    <div className="notif-time">{new Date(n.createdAt).toLocaleString()}</div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
         </div>
-        
-        {/* Profil Utilisateur Connecté */}
-        <div className="user-profile">
-          <div className="avatar">
-            {user?.username ? user.username[0].toUpperCase() : <User size={18} />}
-          </div>
+
+        {/* User chip */}
+        <div className="user-chip">
+          <div className="user-avatar">{initials}</div>
           <div className="user-info">
             <span className="user-name">{user?.username || 'Utilisateur'}</span>
             <span className="user-role">{user?.role || 'Technicien'}</span>
           </div>
         </div>
 
-        {/* Bouton de Déconnexion */}
-        <button className="logout-btn" title="Se déconnecter" onClick={logout}>
-          <LogOut size={16} />
+        {/* Logout */}
+        <button className="logout-btn" onClick={logout} title="Se déconnecter">
+          <LogOut size={15} />
           <span>Déconnexion</span>
         </button>
       </div>

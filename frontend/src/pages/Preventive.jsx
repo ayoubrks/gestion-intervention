@@ -160,10 +160,10 @@ const Preventive = () => {
       </div>
 
       {activeTab === 'plans' ? (
-        <div className="glass-card table-container" style={{ padding: '0', overflow: 'hidden' }}>
-          <table className="app-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="card table-container" style={{ padding: '0', overflow: 'hidden' }}>
+          <table className="app-table">
             <thead>
-              <tr style={{ borderBottom: '1px solid var(--glass-border)', backgroundColor: 'rgba(255,255,255,0.02)' }}>
+              <tr>
                 <th style={{ padding: '16px' }}>Plan / Titre</th>
                 <th style={{ padding: '16px' }}>Équipement</th>
                 <th style={{ padding: '16px' }}>Fréquence</th>
@@ -178,7 +178,7 @@ const Preventive = () => {
                 <tr><td colSpan="5" className="text-center p-4">Aucun plan de maintenance préventive</td></tr>
               ) : (
                 plans.map(plan => (
-                  <tr key={plan.id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
+                  <tr key={plan.id}>
                     <td style={{ padding: '16px' }}>
                       <div>
                         <strong>{plan.title}</strong>
@@ -209,10 +209,10 @@ const Preventive = () => {
           </table>
         </div>
       ) : (
-        <div className="glass-card table-container" style={{ padding: '0', overflow: 'hidden' }}>
-          <table className="app-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="card table-container" style={{ padding: '0', overflow: 'hidden' }}>
+          <table className="app-table">
             <thead>
-              <tr style={{ borderBottom: '1px solid var(--glass-border)', backgroundColor: 'rgba(255,255,255,0.02)' }}>
+              <tr>
                 <th style={{ padding: '16px' }}>Date Prévue</th>
                 <th style={{ padding: '16px' }}>Tâche / Plan</th>
                 <th style={{ padding: '16px' }}>Équipement</th>
@@ -228,7 +228,7 @@ const Preventive = () => {
                 <tr><td colSpan="6" className="text-center p-4">Aucune tâche planifiée</td></tr>
               ) : (
                 tasks.map(task => (
-                  <tr key={task.id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
+                  <tr key={task.id}>
                     <td style={{ padding: '16px', fontWeight: 600 }}>{new Date(task.scheduledDate).toLocaleDateString()}</td>
                     <td style={{ padding: '16px' }}>{task.preventiveMaintenanceTitle}</td>
                     <td style={{ padding: '16px' }}>{task.equipmentName}</td>
@@ -265,12 +265,13 @@ const Preventive = () => {
       {/* Modal Create Plan */}
       {isPlanModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-content glass-card animate-fade-in">
-            <div className="modal-header flex justify-between items-center mb-4">
+          <div className="modal-panel animate-fade-in">
+            <div className="modal-header">
               <h3>Créer un Plan de Maintenance</h3>
-              <button className="icon-btn" onClick={() => setIsPlanModalOpen(false)}><X size={20} /></button>
+              <button className="modal-close" onClick={() => setIsPlanModalOpen(false)}><X size={20} /></button>
             </div>
             <form onSubmit={handleCreatePlan}>
+              <div className="modal-body">
               <div className="form-group mb-3">
                 <label className="form-label">Titre du Plan</label>
                 <input required type="text" className="form-input" value={planForm.title} onChange={e => setPlanForm({...planForm, title: e.target.value})} placeholder="ex: Révision Mensuelle Pompe A" />
@@ -296,7 +297,8 @@ const Preventive = () => {
                   </select>
                 </div>
               </div>
-              <div className="modal-footer flex justify-between mt-4">
+              </div>
+              <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setIsPlanModalOpen(false)}>Annuler</button>
                 <button type="submit" className="btn btn-primary">Créer le plan</button>
               </div>
@@ -308,12 +310,13 @@ const Preventive = () => {
       {/* Modal Generate Tasks */}
       {isGenerateOpen && selectedPlan && (
         <div className="modal-overlay">
-          <div className="modal-content glass-card animate-fade-in" style={{ maxWidth: '350px' }}>
-            <div className="modal-header flex justify-between items-center mb-4">
+          <div className="modal-panel modal-panel-sm animate-fade-in">
+            <div className="modal-header">
               <h3>Planifier des opérations</h3>
-              <button className="icon-btn" onClick={() => setIsGenerateOpen(false)}><X size={20} /></button>
+              <button className="modal-close" onClick={() => setIsGenerateOpen(false)}><X size={20} /></button>
             </div>
             <form onSubmit={handleGenerateTasks}>
+              <div className="modal-body">
               <div className="form-group text-center mb-4">
                 <h4>{selectedPlan.title}</h4>
                 <p className="text-muted">Génération automatique des prochaines occurrences.</p>
@@ -322,7 +325,8 @@ const Preventive = () => {
                 <label className="form-label">Nombre d'échéances à générer</label>
                 <input required type="number" min="1" max="12" className="form-input text-center" style={{ fontSize: '1.5rem' }} value={generateCount} onChange={e => setGenerateCount(e.target.value)} />
               </div>
-              <div className="modal-footer flex justify-between mt-4">
+              </div>
+              <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setIsGenerateOpen(false)}>Annuler</button>
                 <button type="submit" className="btn btn-primary">Générer</button>
               </div>
@@ -334,17 +338,19 @@ const Preventive = () => {
       {/* Modal Complete Task */}
       {isCompleteOpen && selectedTask && (
         <div className="modal-overlay">
-          <div className="modal-content glass-card animate-fade-in">
-            <div className="modal-header flex justify-between items-center mb-4">
+          <div className="modal-panel animate-fade-in">
+            <div className="modal-header">
               <h3>Clôturer la Tâche Préventive</h3>
-              <button className="icon-btn" onClick={() => setIsCompleteOpen(false)}><X size={20} /></button>
+              <button className="modal-close" onClick={() => setIsCompleteOpen(false)}><X size={20} /></button>
             </div>
             <form onSubmit={handleCompleteTask}>
+              <div className="modal-body">
               <div className="form-group mb-4">
                 <label className="form-label">Remarques / Observations</label>
                 <textarea required className="form-input" rows="4" value={completeRemarks} onChange={e => setCompleteRemarks(e.target.value)} placeholder="Décrivez les résultats de la vérification..."></textarea>
               </div>
-              <div className="modal-footer flex justify-between mt-4">
+              </div>
+              <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setIsCompleteOpen(false)}>Annuler</button>
                 <button type="submit" className="btn btn-primary">Clôturer</button>
               </div>

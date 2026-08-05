@@ -67,7 +67,7 @@ const Dashboard = () => {
       {/* KPI Cards Row */}
       <div className="kpi-grid">
         <div className="kpi-card">
-          <div className="kpi-icon" style={{ background: 'rgba(59, 130, 246, 0.12)', color: '#60a5fa' }}>
+          <div className="kpi-icon" style={{ background: 'var(--blue-subtle)', color: 'var(--blue)' }}>
             <Wrench size={24} />
           </div>
           <div className="kpi-body">
@@ -77,7 +77,7 @@ const Dashboard = () => {
         </div>
 
         <div className="kpi-card">
-          <div className="kpi-icon" style={{ background: 'rgba(245, 158, 11, 0.12)', color: '#fbbf24' }}>
+          <div className="kpi-icon" style={{ background: 'var(--amber-subtle)', color: 'var(--amber)' }}>
             <CalendarClock size={24} />
           </div>
           <div className="kpi-body">
@@ -87,7 +87,7 @@ const Dashboard = () => {
         </div>
 
         <div className="kpi-card">
-          <div className="kpi-icon" style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#34d399' }}>
+          <div className="kpi-icon" style={{ background: 'var(--green-subtle)', color: 'var(--green)' }}>
             <Clock size={24} />
           </div>
           <div className="kpi-body">
@@ -97,7 +97,7 @@ const Dashboard = () => {
         </div>
 
         <div className="kpi-card">
-          <div className="kpi-icon" style={{ background: 'rgba(139, 92, 246, 0.12)', color: '#a78bfa' }}>
+          <div className="kpi-icon" style={{ background: 'var(--accent-subtle)', color: 'var(--accent-light)' }}>
             <TrendingUp size={24} />
           </div>
           <div className="kpi-body">
@@ -107,7 +107,7 @@ const Dashboard = () => {
         </div>
 
         <div className="kpi-card">
-          <div className="kpi-icon" style={{ background: 'rgba(239, 68, 68, 0.12)', color: '#f87171' }}>
+          <div className="kpi-icon" style={{ background: 'var(--red-subtle)', color: 'var(--red)' }}>
             <AlertTriangle size={24} />
           </div>
           <div className="kpi-body">
@@ -117,7 +117,7 @@ const Dashboard = () => {
         </div>
 
         <div className="kpi-card">
-          <div className="kpi-icon" style={{ background: 'rgba(34, 197, 94, 0.12)', color: '#4ade80' }}>
+          <div className="kpi-icon" style={{ background: 'var(--green-subtle)', color: 'var(--green)' }}>
             <DollarSign size={24} />
           </div>
           <div className="kpi-body">
@@ -130,18 +130,18 @@ const Dashboard = () => {
       {/* Second row: Status Distribution + AI Synthesis */}
       <div className="dashboard-row">
         {/* Status Distribution */}
-        <div className="glass-card status-card">
+        <div className="card status-card">
           <h3>Répartition des Interventions</h3>
           <div className="status-bars">
-            <StatusBar label="En attente" count={dist.pending ?? 0} total={stats?.totalInterventions || 1} color="#f59e0b" />
-            <StatusBar label="Assigné" count={dist.assigned ?? 0} total={stats?.totalInterventions || 1} color="#8b5cf6" />
-            <StatusBar label="En cours" count={dist.inProgress ?? 0} total={stats?.totalInterventions || 1} color="#3b82f6" />
-            <StatusBar label="Terminé" count={dist.completed ?? 0} total={stats?.totalInterventions || 1} color="#10b981" />
+            <StatusBar label="En attente" count={dist.pending ?? 0} total={stats?.totalInterventions || 1} color="var(--amber)" />
+            <StatusBar label="Assigné" count={dist.assigned ?? 0} total={stats?.totalInterventions || 1} color="var(--accent-light)" />
+            <StatusBar label="En cours" count={dist.inProgress ?? 0} total={stats?.totalInterventions || 1} color="var(--blue)" />
+            <StatusBar label="Terminé" count={dist.completed ?? 0} total={stats?.totalInterventions || 1} color="var(--green)" />
           </div>
         </div>
 
         {/* AI Synthesis */}
-        <div className="glass-card ai-card">
+        <div className="card ai-card">
           <div className="ai-card-header">
             <div className="flex items-center gap-2">
               <div className="ai-icon"><Bot size={20} /></div>

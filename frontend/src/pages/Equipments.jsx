@@ -193,7 +193,7 @@ const Equipments = () => {
         )}
       </div>
 
-      <div className="glass-card mb-4 filter-bar flex gap-4">
+      <div className="card mb-4 filter-bar flex gap-4">
         <div className="input-with-icon" style={{ flex: 1 }}>
           <Search size={18} className="input-icon" />
           <input 
@@ -229,7 +229,7 @@ const Equipments = () => {
           </div>
         ) : (
           equipments.map(eq => (
-            <div key={eq.id} className="glass-card equipment-card">
+            <div key={eq.id} className="card equipment-card">
               <div className="eq-card-header">
                 <div className="eq-icon">
                   <Wrench size={24} />
@@ -266,12 +266,13 @@ const Equipments = () => {
       {/* Modal Add/Edit Equipment */}
       {isModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-content glass-card animate-fade-in">
-            <div className="modal-header flex justify-between items-center mb-4">
+          <div className="modal-panel animate-fade-in">
+            <div className="modal-header">
               <h3>{editingEquipment ? 'Modifier l\'équipement' : 'Nouvel Équipement'}</h3>
-              <button className="icon-btn" onClick={closeModal}><X size={20} /></button>
+              <button className="modal-close" onClick={closeModal}><X size={20} /></button>
             </div>
             <form onSubmit={handleFormSubmit}>
+              <div className="modal-body">
               <div className="form-group mb-3">
                 <label className="form-label">Nom de l'équipement</label>
                 <input 
@@ -322,7 +323,8 @@ const Equipments = () => {
                   </select>
                 </div>
               </div>
-              <div className="modal-footer flex justify-between mt-4">
+              </div>
+              <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={closeModal}>Annuler</button>
                 <button type="submit" className="btn btn-primary">Sauvegarder</button>
               </div>
@@ -334,14 +336,14 @@ const Equipments = () => {
       {/* Modal Manage Categories */}
       {isCategoryModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-content glass-card animate-fade-in" style={{ maxWidth: '500px' }}>
-            <div className="modal-header flex justify-between items-center mb-4">
+          <div className="modal-panel animate-fade-in">
+            <div className="modal-header">
               <h3>Catégories d'Équipements</h3>
-              <button className="icon-btn" onClick={() => setIsCategoryModalOpen(false)}><X size={20} /></button>
+              <button className="modal-close" onClick={() => setIsCategoryModalOpen(false)}><X size={20} /></button>
             </div>
-            
-            <form onSubmit={handleCreateCategory} className="mb-4 glass-card p-3">
-              <h4 className="mb-2 flex items-center gap-2"><FolderPlus size={16}/> Nouvelle Catégorie</h4>
+            <div className="modal-body">
+              <form onSubmit={handleCreateCategory} className="mb-4 card p-4">
+                <h4 className="mb-3 flex items-center gap-2"><FolderPlus size={16}/> Nouvelle Catégorie</h4>
               <div className="form-group mb-2">
                 <input 
                   type="text" 
@@ -364,26 +366,27 @@ const Equipments = () => {
               <button type="submit" className="btn btn-primary btn-sm w-full mt-2">Ajouter la catégorie</button>
             </form>
 
-            <div className="category-list">
-              <h4>Catégories existantes :</h4>
-              <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                {activeCategories.length === 0 ? (
-                  <p className="text-muted p-2">Aucune catégorie</p>
-                ) : (
-                  activeCategories.map(cat => (
-                    <div key={cat.id} className="flex justify-between items-center p-2 mb-1 rounded" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--glass-border)' }}>
-                      <div>
-                        <strong>{cat.name}</strong>
-                        {cat.description && <div className="text-muted"><small>{cat.description}</small></div>}
+              <div className="category-list mt-2">
+                <h4 className="mb-3">Catégories existantes :</h4>
+                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                  {activeCategories.length === 0 ? (
+                    <p className="text-muted p-2">Aucune catégorie</p>
+                  ) : (
+                    activeCategories.map(cat => (
+                      <div key={cat.id} className="category-list-item">
+                        <div>
+                          <div className="cat-name">{cat.name}</div>
+                          {cat.description && <div className="cat-desc">{cat.description}</div>}
+                        </div>
+                        {user?.role === 'Admin' && (
+                          <button className="icon-btn btn-danger-icon" onClick={() => handleDeleteCategory(cat.id, cat.name)}>
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       </div>
-                      {user?.role === 'Admin' && (
-                        <button className="icon-btn btn-danger-icon" onClick={() => handleDeleteCategory(cat.id, cat.name)}>
-                          <Trash2 size={14} />
-                        </button>
-                      )}
-                    </div>
-                  ))
-                )}
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           </div>
