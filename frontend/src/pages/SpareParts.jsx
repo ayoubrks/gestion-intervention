@@ -129,7 +129,7 @@ const SpareParts = () => {
     <div className="spare-parts-page">
       <div className="flex justify-between items-center mb-4">
         <h1>Pièces de Rechange</h1>
-        {(user?.role === 'Admin' || user?.role === 'Manager') && (
+        {(user?.role === 'Admin' ) && (
           <button className="btn btn-primary" onClick={() => openModal()}>
             <Plus size={18} />
             Ajouter une pièce
@@ -200,7 +200,7 @@ const SpareParts = () => {
                         <small className="text-muted">{part.description}</small>
                       </div>
                     </td>
-                    <td style={{ padding: '16px' }}>{part.unitCost ? part.unitCost.toFixed(2) : '0.00'} €</td>
+                    <td style={{ padding: '16px' }}>{part.unitCost ? part.unitCost.toFixed(2) : '0.00'} {localStorage.getItem('app-currency') || 'MAD'}</td>
                     <td style={{ padding: '16px', fontWeight: 600, fontSize: '1.05rem' }}>{part.stockQuantity}</td>
                     <td style={{ padding: '16px' }}>{part.minimumThreshold}</td>
                     <td style={{ padding: '16px' }}>
@@ -214,7 +214,7 @@ const SpareParts = () => {
                     </td>
                     <td style={{ padding: '16px' }}>
                       <div className="flex gap-2">
-                        {(user?.role === 'Admin' || user?.role === 'Manager') && (
+                        {(user?.role === 'Admin' ) && (
                           <>
                             <button className="icon-btn" title="Ajuster le Stock" onClick={() => { setSelectedPart(part); setAdjustQty(0); setIsAdjustOpen(true); }}>
                               <RefreshCw size={14} />
@@ -263,7 +263,7 @@ const SpareParts = () => {
               </div>
               <div className="flex gap-4 mb-4">
                 <div className="form-group flex-1">
-                  <label className="form-label">Coût Unitaire (€)</label>
+                  <label className="form-label">Coût Unitaire ({localStorage.getItem('app-currency') || 'MAD'})</label>
                   <input required type="number" step="0.01" min="0.01" className="form-input" value={formData.unitCost} onChange={e => setFormData({...formData, unitCost: e.target.value})} />
                 </div>
                 <div className="form-group flex-1">

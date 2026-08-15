@@ -6,8 +6,10 @@ import sparePartService from '../services/sparePartService';
 import { AuthContext } from '../context/AuthContext';
 import {
   Plus, Wrench, User, Play, CheckCircle, X,
-  History, Package, Ban, Info, Inbox, RefreshCw, ClipboardCheck
+  History, Package, Ban, Info, Inbox, RefreshCw, ClipboardCheck, Trash2
 } from 'lucide-react';
+import { toast } from 'react-toastify';
+import ConfirmModal from '../components/ConfirmModal';
 import './Interventions.css';
 
 const COLUMNS = [
@@ -42,6 +44,8 @@ const Interventions = () => {
   const [isCancelOpen, setIsCancelOpen]           = useState(false);
   const [isDetailsOpen, setIsDetailsOpen]         = useState(false);
   const [isConsumeSpareOpen, setIsConsumeSpareOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen]             = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId]     = useState(null);
 
   const [selectedIntervention, setSelectedIntervention] = useState(null);
   const [historyLogs, setHistoryLogs] = useState([]);
@@ -123,12 +127,13 @@ const Interventions = () => {
   const handleCancel = async (e) => {
     e.preventDefault();
     try {
-      await interventionService.cancelIntervention(selectedIntervention.id, { reason: cancelReason });
+      await interventionService.cancelIntervention(selectedIntervention.id, cancelReason);
       setIsCancelOpen(false);
       setCancelReason('');
       fetchData();
+      toast.success("Intervention annulée avec succès.");
     } catch (error) {
-      alert('Erreur annulation: ' + (error.response?.data?.message || error.message));
+      toast.error('Erreur annulation: ' + (error.response?.data?.message || error.message));
     }
   };
 
@@ -136,13 +141,61 @@ const Interventions = () => {
     e.preventDefault();
     try {
       await sparePartService.consumeSparePart(selectedIntervention.id, {
-        sparePartId: parseInt(consumeForm.sparePartId), quantityConsumed: parseInt(consumeForm.quantityConsumed),
+        sparePartId: parseInt(consumeForm.sparePartId), quantity: parseInt(consumeForm.quantityConsumed),
       });
       setIsConsumeSpareOpen(false);
       setConsumeForm({ sparePartId: '', quantityConsumed: 1 });
       fetchData();
     } catch (error) {
       alert('Erreur consommation pièce: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const handleDragStart = (e, inv) => {
+    e.dataTransfer.setData('interventionId', inv.id);
+    e.dataTransfer.setData('sourceStatus', inv.status);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = async (e, targetStatus) => {
+    e.preventDefault();
+    const invId = e.dataTransfer.getData('interventionId');
+    const sourceStatus = e.dataTransfer.getData('sourceStatus');
+    
+    if (!invId || sourceStatus === targetStatus) return;
+
+    const inv = interventions.find(i => i.id === parseInt(invId));
+    if (!inv) return;
+
+    const isAdmin = user?.role === 'Admin' ;
+    const isTechOwner = user?.id === inv.technicianUserId;
+    const canAct = isAdmin || isTechOwner;
+
+    if (targetStatus === 'Assigned' && sourceStatus === 'Pending' && isAdmin) {
+      setSelectedIntervention(inv);
+      setIsAssignOpen(true);
+    } else if (targetStatus === 'InProgress' && sourceStatus === 'Assigned' && canAct) {
+      handleStart(inv.id);
+    } else if (targetStatus === 'Completed' && sourceStatus === 'InProgress' && canAct) {
+      setSelectedIntervention(inv);
+      setIsCompleteOpen(true);
+    } else if (targetStatus === 'Cancelled' && ['Pending', 'Assigned', 'InProgress'].includes(sourceStatus) && isAdmin) {
+      setSelectedIntervention(inv);
+      setIsCancelOpen(true);
+    }
+  };
+
+  const confirmDelete = async () => {
+    setConfirmOpen(false);
+    try {
+      await interventionService.deleteIntervention(confirmDeleteId);
+      toast.success("Intervention supprimée avec succès.");
+      fetchData();
+    } catch (error) {
+      toast.error("Erreur suppression: " + (error.response?.data?.message || error.message));
     }
   };
 
@@ -161,7 +214,7 @@ const Interventions = () => {
     }
   };
 
-  const isAdminOrManager = user?.role === 'Admin' || user?.role === 'Manager';
+  const isAdmin = user?.role === 'Admin' ;
   const totalCount = interventions.length;
 
   return (
@@ -173,7 +226,7 @@ const Interventions = () => {
           <h1>Interventions</h1>
           <span className="item-count-badge">{totalCount}</span>
         </div>
-        {isAdminOrManager && (
+        {isAdmin && (
           <button className="btn btn-primary" onClick={() => setIsCreateOpen(true)} id="btn-create-intervention">
             <Plus size={16} /> Créer une intervention
           </button>
@@ -185,7 +238,12 @@ const Interventions = () => {
         {COLUMNS.map(column => {
           const colItems = interventions.filter(i => i.status === column.id);
           return (
-            <div key={column.id} className="kanban-column">
+            <div 
+              key={column.id} 
+              className="kanban-column"
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, column.id)}
+            >
 
               {/* Column Header */}
               <div className="column-header">
@@ -214,10 +272,16 @@ const Interventions = () => {
                     const priority = PRIORITY_BADGE[inv.priority] || PRIORITY_BADGE.Normal;
                     const stripeColor = PRIORITY_COLOR[inv.priority] || '#3b82f6';
                     const isTechOwner = user?.id === inv.technicianUserId;
-                    const canAct = isAdminOrManager || isTechOwner;
+                    const canAct = isAdmin || isTechOwner;
 
                     return (
-                      <div key={inv.id} className="kanban-card">
+                      <div 
+                        key={inv.id} 
+                        className="kanban-card"
+                        draggable={true}
+                        onDragStart={(e) => handleDragStart(e, inv)}
+                        style={{ cursor: 'grab' }}
+                      >
                         <div className="card-priority-stripe" style={{ backgroundColor: stripeColor }} />
 
                         {/* Top row: priority badge + info button */}
@@ -246,43 +310,46 @@ const Interventions = () => {
                         </div>
 
                         {/* Actions */}
-                        {canAct && (
-                          <>
-                            <hr className="card-divider" />
-                            <div className="card-actions">
-                              {column.id === 'Pending' && isAdminOrManager && (
-                                <button className="card-btn card-btn-ghost" id={`btn-assign-${inv.id}`}
-                                  onClick={() => { setSelectedIntervention(inv); setIsAssignOpen(true); }}>
-                                  <User size={12} /> Assigner
+                        <>
+                          <hr className="card-divider" />
+                          <div className="card-actions">
+                            {column.id === 'Pending' && isAdmin && (
+                              <button className="card-btn card-btn-ghost" id={`btn-assign-${inv.id}`}
+                                onClick={() => { setSelectedIntervention(inv); setIsAssignOpen(true); }}>
+                                <User size={12} /> Assigner
+                              </button>
+                            )}
+                            {column.id === 'Assigned' && canAct && (
+                              <button className="card-btn card-btn-primary" id={`btn-start-${inv.id}`}
+                                onClick={() => handleStart(inv.id)}>
+                                <Play size={12} /> Démarrer
+                              </button>
+                            )}
+                            {column.id === 'InProgress' && canAct && (
+                              <>
+                                <button className="card-btn card-btn-ghost" id={`btn-piece-${inv.id}`}
+                                  onClick={() => { setSelectedIntervention(inv); setIsConsumeSpareOpen(true); }}>
+                                  <Package size={12} /> Pièce
                                 </button>
-                              )}
-                              {column.id === 'Assigned' && canAct && (
-                                <button className="card-btn card-btn-primary" id={`btn-start-${inv.id}`}
-                                  onClick={() => handleStart(inv.id)}>
-                                  <Play size={12} /> Démarrer
+                                <button className="card-btn card-btn-success" id={`btn-complete-${inv.id}`}
+                                  onClick={() => { setSelectedIntervention(inv); setIsCompleteOpen(true); }}>
+                                  <CheckCircle size={12} /> Terminer
                                 </button>
-                              )}
-                              {column.id === 'InProgress' && canAct && (
-                                <>
-                                  <button className="card-btn card-btn-ghost" id={`btn-piece-${inv.id}`}
-                                    onClick={() => { setSelectedIntervention(inv); setIsConsumeSpareOpen(true); }}>
-                                    <Package size={12} /> Pièce
-                                  </button>
-                                  <button className="card-btn card-btn-success" id={`btn-complete-${inv.id}`}
-                                    onClick={() => { setSelectedIntervention(inv); setIsCompleteOpen(true); }}>
-                                    <CheckCircle size={12} /> Terminer
-                                  </button>
-                                </>
-                              )}
-                              {['Pending', 'Assigned', 'InProgress'].includes(column.id) && isAdminOrManager && (
-                                <button className="card-btn card-btn-danger icon-btn" title="Annuler" id={`btn-cancel-${inv.id}`}
-                                  onClick={() => { setSelectedIntervention(inv); setIsCancelOpen(true); }}>
-                                  <Ban size={12} />
-                                </button>
-                              )}
-                            </div>
-                          </>
-                        )}
+                              </>
+                            )}
+                            {['Pending', 'Assigned', 'InProgress'].includes(column.id) && (isAdmin || isTechOwner) && (
+                              <button className="card-btn card-btn-danger icon-btn" title="Annuler" id={`btn-cancel-${inv.id}`}
+                                onClick={() => { setSelectedIntervention(inv); setIsCancelOpen(true); }}>
+                                <Ban size={12} />
+                              </button>
+                            )}
+                            <button className="card-btn card-btn-danger icon-btn" title="Supprimer" id={`btn-delete-${inv.id}`}
+                              style={{ marginLeft: 'auto' }}
+                              onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(inv.id); setConfirmOpen(true); }}>
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        </>
                       </div>
                     );
                   })
@@ -547,6 +614,15 @@ const Interventions = () => {
           </div>
         </div>
       )}
+      <ConfirmModal
+        isOpen={confirmOpen}
+        onConfirm={confirmDelete}
+        onCancel={() => setConfirmOpen(false)}
+        title="Supprimer l'intervention"
+        message={<>Voulez-vous vraiment supprimer cette intervention ? Cette action est <strong>irréversible</strong>.</>}
+        confirmText="Supprimer"
+        variant="danger"
+      />
 
     </div>
   );

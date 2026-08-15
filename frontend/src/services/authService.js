@@ -5,6 +5,7 @@ const authService = {
     const response = await api.post('/auth/login', { username, password });
     if (response.data && response.data.token) {
       const user = {
+        id: response.data.userId,
         username: response.data.username,
         role: response.data.role
       };
@@ -24,6 +25,7 @@ const authService = {
     });
     if (response.data && response.data.token) {
       const user = {
+        id: response.data.userId,
         username: response.data.username,
         role: response.data.role
       };

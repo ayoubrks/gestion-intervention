@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SmartMaintenance.Infrastructure.Data;
 using SmartMaintenance.Domain.Entities;
 using System.Security.Claims;
+using System.Collections.Concurrent;
 
 namespace SmartMaintenance.Api.Controllers
 {
@@ -13,6 +14,7 @@ namespace SmartMaintenance.Api.Controllers
     public class NotificationsController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private static readonly ConcurrentDictionary<string, bool> _dismissedKeys = new();
 
         public NotificationsController(AppDbContext context)
         {
@@ -79,6 +81,35 @@ namespace SmartMaintenance.Api.Controllers
             return Ok(new { message = "Toutes les notifications ont été marquées comme lues" });
         }
 
+        // DELETE: api/notifications/1
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteNotification(int id)
+        {
+            var userId = GetCurrentUserId();
+            var notification = await _context.Notifications.FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId);
+            if (notification == null) return NotFound();
+
+            _dismissedKeys.TryAdd($"{userId}:{notification.Message}", true);
+            _context.Notifications.Remove(notification);
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Notification supprimée" });
+        }
+
+        // DELETE: api/notifications/delete-all
+        [HttpDelete("delete-all")]
+        public async Task<IActionResult> DeleteAllNotifications()
+        {
+            var userId = GetCurrentUserId();
+            var notifications = await _context.Notifications.Where(n => n.UserId == userId).ToListAsync();
+            foreach (var n in notifications)
+            {
+                _dismissedKeys.TryAdd($"{userId}:{n.Message}", true);
+            }
+            _context.Notifications.RemoveRange(notifications);
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Toutes les notifications ont été supprimées" });
+        }
+
         private async Task GenerateLiveSystemAlertsAsync(int userId)
         {
             // 1. Détecter les pièces en alerte stock bas
@@ -89,6 +120,9 @@ namespace SmartMaintenance.Api.Controllers
             foreach (var part in lowStockParts)
             {
                 string msg = $"⚠️ Alerte Stock Bas : La pièce '{part.Name}' ({part.Reference}) a un stock de {part.StockQuantity} (seuil min: {part.MinimumThreshold}).";
+                string key = $"{userId}:{msg}";
+                if (_dismissedKeys.ContainsKey(key)) continue;
+
                 bool exists = await _context.Notifications.AnyAsync(n => n.UserId == userId && n.Message == msg);
                 if (!exists)
                 {
@@ -111,6 +145,9 @@ namespace SmartMaintenance.Api.Controllers
             foreach (var inv in pendingInterventions)
             {
                 string msg = $"🔧 Nouvelle Intervention : '{inv.Title}' nécessite une assignation de technicien.";
+                string key = $"{userId}:{msg}";
+                if (_dismissedKeys.ContainsKey(key)) continue;
+
                 bool exists = await _context.Notifications.AnyAsync(n => n.UserId == userId && n.Message == msg);
                 if (!exists)
                 {
@@ -136,6 +173,9 @@ namespace SmartMaintenance.Api.Controllers
                 if (task.PreventiveMaintenance != null)
                 {
                     string msg = $"📅 Maintenance Préventive : Échéance proche pour '{task.PreventiveMaintenance.Title}'.";
+                    string key = $"{userId}:{msg}";
+                    if (_dismissedKeys.ContainsKey(key)) continue;
+
                     bool exists = await _context.Notifications.AnyAsync(n => n.UserId == userId && n.Message == msg);
                     if (!exists)
                     {

@@ -66,10 +66,9 @@ namespace SmartMaintenance.Infrastructure.Data
                 .HasForeignKey(i => i.TechnicianId)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            // Seed Data : Les 3 rôles de base
+            // Seed Data : Les rôles de base
             modelBuilder.Entity<Role>().HasData(
                 new Role { Id = 1, Name = "Admin" },
-                new Role { Id = 2, Name = "Manager" },
                 new Role { Id = 3, Name = "Technician" }
             );
         }

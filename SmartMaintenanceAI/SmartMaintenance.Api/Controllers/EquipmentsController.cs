@@ -45,7 +45,7 @@ namespace SmartMaintenance.Api.Controllers
 
         // POST: api/equipments
         [HttpPost]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create(CreateEquipmentDto createDto)
         {
             try
@@ -61,7 +61,7 @@ namespace SmartMaintenance.Api.Controllers
 
         // PUT: api/equipments/5
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Update(int id, UpdateEquipmentDto updateDto)
         {
             try
@@ -115,7 +115,7 @@ namespace SmartMaintenance.Api.Controllers
 
         // POST: api/equipments/categories
         [HttpPost("categories")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateCategory(CreateCategoryDto createDto)
         {
             try
@@ -131,7 +131,7 @@ namespace SmartMaintenance.Api.Controllers
 
         // PUT: api/equipments/categories/5
         [HttpPut("categories/{id}")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateCategory(int id, CreateCategoryDto updateDto)
         {
             try
@@ -168,7 +168,7 @@ namespace SmartMaintenance.Api.Controllers
 
         // GET: api/equipments/stats
         [HttpGet("stats")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetStats()
         {
             var stats = await _equipmentService.GetEquipmentStatsAsync();

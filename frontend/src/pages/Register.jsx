@@ -100,7 +100,6 @@ const Register = () => {
                 required
               >
                 <option value="3">Technicien</option>
-                <option value="2">Manager</option>
                 <option value="1">Administrateur</option>
               </select>
             </div>

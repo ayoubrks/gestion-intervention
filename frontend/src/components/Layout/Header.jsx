@@ -1,13 +1,13 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import notificationService from '../../services/notificationService';
-import { Bell, Search, LogOut, CheckCheck, AlertCircle } from 'lucide-react';
+import { Bell, LogOut, CheckCheck, AlertCircle, Trash2 } from 'lucide-react';
 import './Header.css';
 
 const Header = () => {
   const { user, logout } = useContext(AuthContext);
   const [notifications, setNotifications] = useState([]);
-  const [isNotifOpen, setIsNotifOpen]     = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
 
   useEffect(() => {
     fetchNotifications();
@@ -25,13 +25,40 @@ const Header = () => {
   };
 
   const handleMarkAll = async () => {
-    try { await notificationService.markAllAsRead(); fetchNotifications(); }
-    catch (err) { console.error(err); }
+    try {
+      await notificationService.markAllAsRead();
+      fetchNotifications();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleMarkOne = async (id) => {
-    try { await notificationService.markAsRead(id); fetchNotifications(); }
-    catch (err) { console.error(err); }
+    try {
+      await notificationService.markAsRead(id);
+      fetchNotifications();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteOne = async (e, id) => {
+    e.stopPropagation(); // prevent markAsRead trigger
+    try {
+      await notificationService.deleteNotification(id);
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    } catch (err) {
+      console.error('Erreur suppression notification:', err);
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    try {
+      await notificationService.deleteAllNotifications();
+      setNotifications([]);
+    } catch (err) {
+      console.error('Erreur suppression toutes notifications:', err);
+    }
   };
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
@@ -39,18 +66,6 @@ const Header = () => {
 
   return (
     <header className="header">
-      {/* Search */}
-      <div className="header-search">
-        <div className="search-wrap">
-          <Search size={15} className="search-icon" />
-          <input
-            type="text"
-            placeholder="Rechercher équipement, intervention..."
-            className="search-input"
-          />
-        </div>
-      </div>
-
       <div className="header-actions">
         {/* Notifications */}
         <div className="notif-container">
@@ -67,11 +82,18 @@ const Header = () => {
             <div className="notif-dropdown">
               <div className="notif-dropdown-header">
                 <h4>Notifications {unreadCount > 0 && `(${unreadCount})`}</h4>
-                {unreadCount > 0 && (
-                  <button className="notif-mark-all" onClick={handleMarkAll}>
-                    <CheckCheck size={12} /> Tout lire
-                  </button>
-                )}
+                <div className="notif-actions-group">
+                  {unreadCount > 0 && (
+                    <button className="notif-action-btn notif-mark-all" onClick={handleMarkAll} title="Marquer tout comme lu">
+                      <CheckCheck size={13} /> Tout lire
+                    </button>
+                  )}
+                  {notifications.length > 0 && (
+                    <button className="notif-action-btn notif-delete-all" onClick={handleDeleteAll} title="Supprimer toutes les notifications">
+                      <Trash2 size={13} /> Tout supprimer
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="notif-list">
                 {notifications.length === 0 ? (
@@ -85,8 +107,17 @@ const Header = () => {
                     className={`notif-item ${!n.isRead ? 'unread' : ''}`}
                     onClick={() => handleMarkOne(n.id)}
                   >
-                    <div className="notif-message">{n.message}</div>
-                    <div className="notif-time">{new Date(n.createdAt).toLocaleString()}</div>
+                    <div className="notif-item-body">
+                      <div className="notif-message">{n.message}</div>
+                      <div className="notif-time">{new Date(n.createdAt).toLocaleString('fr-FR')}</div>
+                    </div>
+                    <button
+                      className="notif-delete-one"
+                      onClick={(e) => handleDeleteOne(e, n.id)}
+                      title="Supprimer cette notification"
+                    >
+                      <Trash2 size={13} />
+                    </button>
                   </div>
                 ))}
               </div>

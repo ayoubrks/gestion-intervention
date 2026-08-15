@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import statisticsService from '../services/statisticsService';
 import { 
   Wrench, CalendarClock, Package, AlertTriangle, 
-  Clock, TrendingUp, DollarSign, Activity, Bot, RefreshCw
+  Clock, TrendingUp, DollarSign, Activity, Bot, RefreshCw,
+  CheckCircle2, XCircle, Hourglass, ShieldCheck, TriangleAlert, Info
 } from 'lucide-react';
 import './Dashboard.css';
 
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
-  const [synthesis, setSynthesis] = useState('');
+  const [synthesis, setSynthesis] = useState(null);
   const [loading, setLoading] = useState(true);
   const [synthLoading, setSynthLoading] = useState(false);
 
@@ -24,7 +25,7 @@ const Dashboard = () => {
         statisticsService.getAISynthesis()
       ]);
       setStats(statsData);
-      setSynthesis(synthData.synthesis);
+      setSynthesis(synthData);
     } catch (error) {
       console.error("Erreur chargement dashboard:", error);
     } finally {
@@ -36,7 +37,7 @@ const Dashboard = () => {
     setSynthLoading(true);
     try {
       const data = await statisticsService.getAISynthesis();
-      setSynthesis(data.synthesis);
+      setSynthesis(data);
     } catch (error) {
       console.error("Erreur synthèse IA:", error);
     } finally {
@@ -66,65 +67,12 @@ const Dashboard = () => {
 
       {/* KPI Cards Row */}
       <div className="kpi-grid">
-        <div className="kpi-card">
-          <div className="kpi-icon" style={{ background: 'var(--blue-subtle)', color: 'var(--blue)' }}>
-            <Wrench size={24} />
-          </div>
-          <div className="kpi-body">
-            <span className="kpi-label">Équipements</span>
-            <span className="kpi-value">{stats?.totalEquipments ?? 0}</span>
-          </div>
-        </div>
-
-        <div className="kpi-card">
-          <div className="kpi-icon" style={{ background: 'var(--amber-subtle)', color: 'var(--amber)' }}>
-            <CalendarClock size={24} />
-          </div>
-          <div className="kpi-body">
-            <span className="kpi-label">Interventions</span>
-            <span className="kpi-value">{stats?.totalInterventions ?? 0}</span>
-          </div>
-        </div>
-
-        <div className="kpi-card">
-          <div className="kpi-icon" style={{ background: 'var(--green-subtle)', color: 'var(--green)' }}>
-            <Clock size={24} />
-          </div>
-          <div className="kpi-body">
-            <span className="kpi-label">MTTR (min)</span>
-            <span className="kpi-value">{stats?.averageMTTR ?? 0}</span>
-          </div>
-        </div>
-
-        <div className="kpi-card">
-          <div className="kpi-icon" style={{ background: 'var(--accent-subtle)', color: 'var(--accent-light)' }}>
-            <TrendingUp size={24} />
-          </div>
-          <div className="kpi-body">
-            <span className="kpi-label">Préventif (%)</span>
-            <span className="kpi-value">{stats?.preventiveSuccessRate ?? 0}%</span>
-          </div>
-        </div>
-
-        <div className="kpi-card">
-          <div className="kpi-icon" style={{ background: 'var(--red-subtle)', color: 'var(--red)' }}>
-            <AlertTriangle size={24} />
-          </div>
-          <div className="kpi-body">
-            <span className="kpi-label">Stock Bas</span>
-            <span className="kpi-value">{stats?.lowStockPartsCount ?? 0}</span>
-          </div>
-        </div>
-
-        <div className="kpi-card">
-          <div className="kpi-icon" style={{ background: 'var(--green-subtle)', color: 'var(--green)' }}>
-            <DollarSign size={24} />
-          </div>
-          <div className="kpi-body">
-            <span className="kpi-label">Coût Pièces (€)</span>
-            <span className="kpi-value">{stats?.totalSparePartCost ?? 0}</span>
-          </div>
-        </div>
+        <KpiCard icon={<Wrench size={22}/>} label="Équipements" value={stats?.totalEquipments ?? 0} color="blue" />
+        <KpiCard icon={<CalendarClock size={22}/>} label="Interventions" value={stats?.totalInterventions ?? 0} color="amber" />
+        <KpiCard icon={<Clock size={22}/>} label="MTTR (min)" value={stats?.averageMTTR ?? 0} color="green" />
+        <KpiCard icon={<TrendingUp size={22}/>} label="Préventif" value={`${stats?.preventiveSuccessRate ?? 0}%`} color="accent" />
+        <KpiCard icon={<AlertTriangle size={22}/>} label="Stock Bas" value={stats?.lowStockPartsCount ?? 0} color="red" />
+        <KpiCard icon={<DollarSign size={22}/>} label={`Coût Pièces (${localStorage.getItem('app-currency') || 'MAD'})`} value={stats?.totalSparePartCost ?? 0} color="green" />
       </div>
 
       {/* Second row: Status Distribution + AI Synthesis */}
@@ -152,11 +100,12 @@ const Dashboard = () => {
               {synthLoading ? 'Analyse...' : 'Actualiser'}
             </button>
           </div>
+
           <div className="ai-content">
             {synthesis ? (
-              <div className="ai-text" dangerouslySetInnerHTML={{ __html: renderMarkdown(synthesis) }} />
+              <AISynthesisView data={synthesis} />
             ) : (
-              <p className="text-muted">Aucune synthèse disponible. Cliquez sur "Actualiser".</p>
+              <p className="text-muted">Aucune synthèse disponible.</p>
             )}
           </div>
         </div>
@@ -165,7 +114,29 @@ const Dashboard = () => {
   );
 };
 
-// Simple Status Bar component
+/* ── KPI Card ── */
+const colorMap = {
+  blue:   { bg: 'var(--blue-subtle)',   fg: 'var(--blue)' },
+  amber:  { bg: 'var(--amber-subtle)',  fg: 'var(--amber)' },
+  green:  { bg: 'var(--green-subtle)',  fg: 'var(--green)' },
+  accent: { bg: 'var(--accent-subtle)', fg: 'var(--accent-light)' },
+  red:    { bg: 'var(--red-subtle)',    fg: 'var(--red)' },
+};
+
+const KpiCard = ({ icon, label, value, color }) => {
+  const c = colorMap[color] || colorMap.blue;
+  return (
+    <div className="kpi-card">
+      <div className="kpi-icon" style={{ background: c.bg, color: c.fg }}>{icon}</div>
+      <div className="kpi-body">
+        <span className="kpi-label">{label}</span>
+        <span className="kpi-value">{value}</span>
+      </div>
+    </div>
+  );
+};
+
+/* ── Status Bar ── */
 const StatusBar = ({ label, count, total, color }) => {
   const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
   return (
@@ -181,16 +152,109 @@ const StatusBar = ({ label, count, total, color }) => {
   );
 };
 
-// Minimal Markdown to HTML
-function renderMarkdown(text) {
-  return text
-    .replace(/### (.*)/g, '<h4>$1</h4>')
-    .replace(/#### (.*)/g, '<h5>$1</h5>')
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/^- (.*)/gm, '<li>$1</li>')
-    .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
-    .replace(/\n\n/g, '<br/><br/>')
-    .replace(/\n/g, '<br/>');
-}
+/* ── AI Synthesis Structured View ── */
+const AISynthesisView = ({ data }) => {
+  const { parc, interventions, performance, recommendations } = data;
+  const curr = localStorage.getItem('app-currency') || 'MAD';
+
+  return (
+    <div className="synth-root">
+
+      {/* Parc Overview */}
+      <section className="synth-section">
+        <div className="synth-section-title">
+          <Wrench size={15} /> Parc Équipements
+        </div>
+        <div className="synth-stat-row">
+          <SynthStat label="Total" value={parc?.total ?? 0} />
+          <SynthStat label="Actifs" value={parc?.active ?? 0} accent="green" />
+          <SynthStat label="En maintenance" value={parc?.maintenance ?? 0} accent="amber" />
+          <SynthStat label="Hors service" value={parc?.horsService ?? 0} accent="red" />
+        </div>
+      </section>
+
+      {/* Interventions */}
+      <section className="synth-section">
+        <div className="synth-section-title">
+          <CalendarClock size={15} /> Interventions
+        </div>
+        <div className="synth-stat-row">
+          <SynthStat label="Total" value={interventions?.total ?? 0} />
+          <SynthStat label="En attente" value={interventions?.pending ?? 0} accent="amber" />
+          <SynthStat label="En cours" value={interventions?.inProgress ?? 0} accent="blue" />
+          <SynthStat label="Terminées" value={interventions?.completed ?? 0} accent="green" />
+        </div>
+      </section>
+
+      {/* Performance */}
+      <section className="synth-section">
+        <div className="synth-section-title">
+          <TrendingUp size={15} /> Performance
+        </div>
+        <div className="synth-stat-row">
+          <SynthStat label="MTTR (min)" value={performance?.mttr ?? 0} accent="blue" />
+          <SynthStat label="Taux préventif" value={`${performance?.preventiveRate ?? 0}%`} accent={performance?.preventiveRate >= 80 ? 'green' : 'amber'} />
+          <SynthStat label="Stock bas" value={performance?.lowStockCount ?? 0} accent={performance?.lowStockCount > 0 ? 'red' : 'green'} />
+          <SynthStat label="Coût pièces" value={`${performance?.totalSparePartCost ?? 0} ${curr}`} />
+        </div>
+      </section>
+
+      {/* Recommendations */}
+      {recommendations && recommendations.length > 0 && (
+        <section className="synth-section">
+          <div className="synth-section-title">
+            <Bot size={15} /> Recommandations IA
+          </div>
+          <div className="synth-recs">
+            {recommendations.map((rec, i) => (
+              <RecommendationCard key={i} rec={rec} />
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+};
+
+/* ── Single Stat Box ── */
+const accentColors = {
+  green: 'var(--green)',
+  amber: 'var(--amber)',
+  red:   'var(--red)',
+  blue:  'var(--blue)',
+};
+
+const SynthStat = ({ label, value, accent }) => (
+  <div className="synth-stat">
+    <span className="synth-stat-value" style={accent ? { color: accentColors[accent] } : {}}>{value}</span>
+    <span className="synth-stat-label">{label}</span>
+  </div>
+);
+
+/* ── Recommendation Card ── */
+const recConfig = {
+  success: { icon: <CheckCircle2 size={16}/>, cls: 'rec-success', label: '✅ Bon état' },
+  warning: { icon: <TriangleAlert size={16}/>, cls: 'rec-warning', label: '⚠️ Attention' },
+  danger:  { icon: <XCircle size={16}/>,       cls: 'rec-danger',  label: '🔴 Critique' },
+  info:    { icon: <Info size={16}/>,           cls: 'rec-info',    label: 'ℹ️ Info' },
+};
+
+const RecommendationCard = ({ rec }) => {
+  const cfg = recConfig[rec.type] || recConfig.info;
+  return (
+    <div className={`rec-card ${cfg.cls}`}>
+      <div className="rec-header">
+        {cfg.icon}
+        <span className="rec-title">{rec.title}</span>
+      </div>
+      <p className="rec-desc">{rec.description}</p>
+      {rec.items && rec.items.length > 0 && (
+        <ul className="rec-items">
+          {rec.items.map((item, i) => <li key={i}>{item}</li>)}
+        </ul>
+      )}
+    </div>
+  );
+};
 
 export default Dashboard;

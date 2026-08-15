@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SmartMaintenance.Application.Interfaces;
 using SmartMaintenance.Infrastructure.Data;
-using System.Text;
 
 namespace SmartMaintenance.Infrastructure.Services
 {
@@ -62,44 +61,127 @@ namespace SmartMaintenance.Infrastructure.Services
             };
         }
 
-        public async Task<string> GetAISynthesisAsync()
+        public async Task<object> GetAISynthesisAsync()
         {
-            var stats = (dynamic)await GetDashboardStatsAsync();
             var totalEquipments = await _context.Equipments.CountAsync();
             var underMaintenance = await _context.Equipments.CountAsync(e => e.Status == "Maintenance");
             var broken = await _context.Equipments.CountAsync(e => e.Status == "Out of Order" || e.Status == "Broken");
+            var active = await _context.Equipments.CountAsync(e => e.Status == "Active");
 
-            var sb = new StringBuilder();
-            sb.AppendLine("### 🤖 Synthèse IA - Smart Maintenance AI");
-            sb.AppendLine();
-            sb.AppendLine($"**État global du parc :** Sur un total de {totalEquipments} équipements, **{underMaintenance}** sont actuellement en maintenance et **{broken}** sont déclarés hors service.");
-            sb.AppendLine();
-            
-            sb.AppendLine("#### 📊 Analyse des performances :");
-            sb.AppendLine($"- **MTTR (Temps moyen de réparation) :** Le temps moyen de résolution est actuellement de **{stats.AverageMTTR} minutes**. C'est un indicateur clé pour l'efficacité opérationnelle.");
-            sb.AppendLine($"- **Taux de complétion préventif :** **{stats.PreventiveSuccessRate}%** des tâches préventives planifiées ont été réalisées. Un taux supérieur à 85% est recommandé pour minimiser les pannes imprévues.");
-            sb.AppendLine($"- **Pièces de rechange :** **{stats.LowStockPartsCount}** pièces de rechange sont en alerte de stock bas. Le coût cumulé des pièces consommées sur les interventions s'élève à **{stats.TotalSparePartCost} €**.");
-            sb.AppendLine();
+            var totalInterventions = await _context.Interventions.CountAsync();
+            var pending = await _context.Interventions.CountAsync(i => i.Status == "Pending");
+            var assigned = await _context.Interventions.CountAsync(i => i.Status == "Assigned");
+            var inProgress = await _context.Interventions.CountAsync(i => i.Status == "InProgress");
+            var completed = await _context.Interventions.CountAsync(i => i.Status == "Completed");
+            var cancelled = await _context.Interventions.CountAsync(i => i.Status == "Cancelled");
 
-            sb.AppendLine("#### 💡 Recommandations stratégiques :");
-            if (stats.LowStockPartsCount > 0)
+            var completedInterventions = await _context.Interventions
+                .Where(i => i.Status == "Completed" && i.ActualDurationMinutes.HasValue)
+                .ToListAsync();
+            var avgMTTR = completedInterventions.Any()
+                ? Math.Round(completedInterventions.Average(i => i.ActualDurationMinutes!.Value), 0)
+                : 0;
+
+            var totalPreventiveTasks = await _context.MaintenanceTasks.CountAsync();
+            var completedPreventive = await _context.MaintenanceTasks.CountAsync(t => t.Status == "Completed");
+            var preventiveRate = totalPreventiveTasks > 0
+                ? Math.Round((double)completedPreventive / totalPreventiveTasks * 100, 1)
+                : 0;
+
+            var lowStockCount = await _context.SpareParts.CountAsync(s => s.StockQuantity <= s.MinimumThreshold);
+            var lowStockParts = await _context.SpareParts
+                .Where(s => s.StockQuantity <= s.MinimumThreshold)
+                .Select(s => new { s.Name, s.StockQuantity, s.MinimumThreshold })
+                .ToListAsync();
+
+            var totalSparePartCost = await _context.InterventionSpareParts
+                .Join(_context.SpareParts, isp => isp.SparePartId, sp => sp.Id, (isp, sp) => new { isp.QuantityUsed, sp.UnitCost })
+                .SumAsync(x => x.QuantityUsed * x.UnitCost);
+
+            // Build recommendations
+            var recommendations = new List<object>();
+
+            if (lowStockCount > 0)
             {
-                sb.AppendLine("- ⚠️ **Rupture imminente de stock :** Il est fortement conseillé de réapprovisionner les pièces en alerte pour éviter de bloquer les futures interventions critiques.");
+                recommendations.Add(new
+                {
+                    type = "warning",
+                    title = "Rupture imminente de stock",
+                    description = $"{lowStockCount} pièce(s) en alerte. Réapprovisionnez pour éviter de bloquer les interventions critiques.",
+                    items = lowStockParts.Select(p => $"{p.Name} : {p.StockQuantity}/{p.MinimumThreshold}").ToList()
+                });
             }
-            if (stats.PreventiveSuccessRate < 80)
+
+            if (preventiveRate < 80)
             {
-                sb.AppendLine("- ⚙️ **Retard préventif :** Le taux de maintenance préventive est faible. Priorisez les tâches du calendrier préventif pour réduire le taux de panne global.");
+                recommendations.Add(new
+                {
+                    type = "warning",
+                    title = "Retard préventif",
+                    description = $"Le taux de maintenance préventive est à {preventiveRate}%. Priorisez les tâches du calendrier pour réduire les pannes.",
+                    items = new List<string>()
+                });
             }
             else
             {
-                sb.AppendLine("- ✅ **Maintenance préventive maîtrisée :** Excellent suivi du calendrier préventif. Continuez à ce rythme pour préserver la durée de vie des machines.");
-            }
-            if (broken > 0)
-            {
-                sb.AppendLine("- 🔧 **Intervention d'urgence requise :** Certains équipements sont hors service. Assurez-vous que des interventions curatives de haute priorité sont planifiées et assignées.");
+                recommendations.Add(new
+                {
+                    type = "success",
+                    title = "Maintenance préventive maîtrisée",
+                    description = $"Excellent suivi à {preventiveRate}%. Continuez à ce rythme pour préserver la durée de vie des machines.",
+                    items = new List<string>()
+                });
             }
 
-            return sb.ToString();
+            if (broken > 0)
+            {
+                recommendations.Add(new
+                {
+                    type = "danger",
+                    title = "Équipements hors service",
+                    description = $"{broken} équipement(s) hors service. Planifiez des interventions curatives de haute priorité.",
+                    items = new List<string>()
+                });
+            }
+
+            if (pending > 3)
+            {
+                recommendations.Add(new
+                {
+                    type = "info",
+                    title = "Interventions en attente",
+                    description = $"{pending} interventions en attente d'assignation. Assignez un technicien pour accélérer le traitement.",
+                    items = new List<string>()
+                });
+            }
+
+            return new
+            {
+                parc = new
+                {
+                    total = totalEquipments,
+                    active,
+                    maintenance = underMaintenance,
+                    horsService = broken
+                },
+                interventions = new
+                {
+                    total = totalInterventions,
+                    pending,
+                    assigned,
+                    inProgress,
+                    completed,
+                    cancelled
+                },
+                performance = new
+                {
+                    mttr = avgMTTR,
+                    preventiveRate,
+                    lowStockCount,
+                    totalSparePartCost = Math.Round(totalSparePartCost, 2)
+                },
+                recommendations
+            };
         }
     }
 }

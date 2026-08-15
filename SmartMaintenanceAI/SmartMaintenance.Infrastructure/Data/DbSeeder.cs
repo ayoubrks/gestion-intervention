@@ -17,7 +17,6 @@ namespace SmartMaintenance.Infrastructure.Data
             {
                 context.Roles.AddRange(
                     new Role { Id = 1, Name = "Admin" },
-                    new Role { Id = 2, Name = "Manager" },
                     new Role { Id = 3, Name = "Technician" }
                 );
                 await context.SaveChangesAsync();
@@ -54,14 +53,6 @@ namespace SmartMaintenance.Infrastructure.Data
                     RoleId = 1
                 };
 
-                var manager = new User
-                {
-                    Username = "manager",
-                    Email = "manager@smartmaintenance.com",
-                    PasswordHash = HashPassword("Manager123!"),
-                    RoleId = 2
-                };
-
                 var tech1 = new User
                 {
                     Username = "technicien1",
@@ -78,7 +69,7 @@ namespace SmartMaintenance.Infrastructure.Data
                     RoleId = 3
                 };
 
-                context.Users.AddRange(admin, manager, tech1, tech2);
+                context.Users.AddRange(admin, tech1, tech2);
                 await context.SaveChangesAsync();
 
                 // Profile techniciens

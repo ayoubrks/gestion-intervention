@@ -16,5 +16,6 @@ namespace SmartMaintenance.Application.Interfaces
         Task<MaintenanceTaskDto> GenerateTasksForPlanAsync(int planId, int numberOfTasks);
         Task<MaintenanceTaskDto> CompleteTaskAsync(int taskId, CompleteMaintenanceTaskDto completeDto);
         Task<MaintenanceTaskDto> ConvertTaskToInterventionAsync(int taskId, int currentUserId);
+        Task<bool> DeleteTaskAsync(int id);
     }
 }

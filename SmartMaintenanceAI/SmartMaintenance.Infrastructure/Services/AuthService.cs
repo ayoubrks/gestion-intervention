@@ -36,6 +36,7 @@ namespace SmartMaintenance.Infrastructure.Services
             return new AuthResponseDto
             {
                 Token = token,
+                UserId = user.Id,
                 Username = user.Username,
                 Role = user.Role.Name,
                 Message = "Connexion réussie"
@@ -78,6 +79,7 @@ namespace SmartMaintenance.Infrastructure.Services
             return new AuthResponseDto
             {
                 Token = token,
+                UserId = createdUser!.Id,
                 Username = createdUser!.Username,
                 Role = createdUser.Role.Name,
                 Message = "Inscription réussie"

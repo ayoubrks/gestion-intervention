@@ -16,6 +16,53 @@ namespace SmartMaintenance.Infrastructure.Services
             _context = context;
         }
 
+        private async Task DeduplicateTasksAndInterventionsAsync()
+        {
+            try
+            {
+                // Remove duplicate pending tasks (same plan & same scheduled date)
+                var pendingTasks = await _context.MaintenanceTasks
+                    .Where(t => t.Status == "Pending")
+                    .ToListAsync();
+
+                var duplicateTasks = pendingTasks
+                    .GroupBy(t => new { t.PreventiveMaintenanceId, t.ScheduledDate })
+                    .Where(g => g.Count() > 1)
+                    .SelectMany(g => g.OrderBy(t => t.Id).Skip(1))
+                    .ToList();
+
+                if (duplicateTasks.Any())
+                {
+                    _context.MaintenanceTasks.RemoveRange(duplicateTasks);
+                }
+
+                // Remove duplicate pending interventions created from preventive tasks
+                var pendingInterventions = await _context.Interventions
+                    .Where(i => i.Status == "Pending" && i.Title.StartsWith("[PREV]"))
+                    .ToListAsync();
+
+                var duplicateInterventions = pendingInterventions
+                    .GroupBy(i => new { i.Title, i.EquipmentId, i.PlannedDate })
+                    .Where(g => g.Count() > 1)
+                    .SelectMany(g => g.OrderBy(i => i.Id).Skip(1))
+                    .ToList();
+
+                if (duplicateInterventions.Any())
+                {
+                    _context.Interventions.RemoveRange(duplicateInterventions);
+                }
+
+                if (duplicateTasks.Any() || duplicateInterventions.Any())
+                {
+                    await _context.SaveChangesAsync();
+                }
+            }
+            catch
+            {
+                // Ignore any temporary deduplication errors
+            }
+        }
+
         public async Task<PagedResult<PreventiveMaintenanceDto>> GetAllPlansAsync(int page, int pageSize, int? equipmentId)
         {
             var query = _context.PreventiveMaintenances
@@ -115,13 +162,15 @@ namespace SmartMaintenance.Infrastructure.Services
 
             if (plan == null) return false;
 
-            _context.PreventiveMaintenances.Remove(plan); // Cascade delete on Tasks is expected
+            _context.PreventiveMaintenances.Remove(plan);
             await _context.SaveChangesAsync();
             return true;
         }
 
         public async Task<PagedResult<MaintenanceTaskDto>> GetAllTasksAsync(int page, int pageSize, string? status, int? equipmentId)
         {
+            await DeduplicateTasksAndInterventionsAsync();
+
             var query = _context.MaintenanceTasks
                 .Include(t => t.PreventiveMaintenance)
                     .ThenInclude(p => p.Equipment)
@@ -176,21 +225,51 @@ namespace SmartMaintenance.Infrastructure.Services
             for (int i = 0; i < numberOfTasks; i++)
             {
                 lastTaskDate = lastTaskDate.AddDays(plan.FrequencyDays);
-                _context.MaintenanceTasks.Add(new MaintenanceTask
+                bool exists = await _context.MaintenanceTasks.AnyAsync(t => 
+                    t.PreventiveMaintenanceId == plan.Id && 
+                    t.ScheduledDate == lastTaskDate
+                );
+
+                if (!exists)
                 {
-                    PreventiveMaintenanceId = plan.Id,
-                    ScheduledDate = lastTaskDate,
-                    Status = "Pending"
-                });
+                    _context.MaintenanceTasks.Add(new MaintenanceTask
+                    {
+                        PreventiveMaintenanceId = plan.Id,
+                        ScheduledDate = lastTaskDate,
+                        Status = "Pending"
+                    });
+                }
             }
 
-            // Mettre à jour NextDueDate du plan
             plan.NextDueDate = plan.Tasks.Where(t => t.Status == "Pending").OrderBy(t => t.ScheduledDate).FirstOrDefault()?.ScheduledDate ?? lastTaskDate;
 
             await _context.SaveChangesAsync();
 
-            // Return the first newly created task (just as a response object, usually one doesn't return anything or returns the plan)
             return (await GetAllTasksAsync(1, 1, null, null)).Items.First(); 
+        }
+
+        private async Task<MaintenanceTaskDto> GetTaskDtoByIdAsync(int taskId)
+        {
+            var t = await _context.MaintenanceTasks
+                .Include(t => t.PreventiveMaintenance)
+                    .ThenInclude(p => p.Equipment)
+                .FirstOrDefaultAsync(t => t.Id == taskId);
+
+            if (t == null) throw new Exception("Tâche non trouvée");
+
+            return new MaintenanceTaskDto
+            {
+                Id = t.Id,
+                ScheduledDate = t.ScheduledDate,
+                Status = t.Status,
+                ExecutedAt = t.ExecutedAt,
+                Remarks = t.Remarks,
+                PreventiveMaintenanceId = t.PreventiveMaintenanceId,
+                PreventiveMaintenanceTitle = t.PreventiveMaintenance.Title,
+                EquipmentId = t.PreventiveMaintenance.EquipmentId,
+                EquipmentName = t.PreventiveMaintenance.Equipment.Name,
+                InterventionId = t.InterventionId
+            };
         }
 
         public async Task<MaintenanceTaskDto> CompleteTaskAsync(int taskId, CompleteMaintenanceTaskDto completeDto)
@@ -218,19 +297,29 @@ namespace SmartMaintenance.Infrastructure.Services
             }
             else
             {
-                task.PreventiveMaintenance.NextDueDate = task.PreventiveMaintenance.NextDueDate.AddDays(task.PreventiveMaintenance.FrequencyDays);
-                _context.MaintenanceTasks.Add(new MaintenanceTask
+                var newDate = task.PreventiveMaintenance.NextDueDate.AddDays(task.PreventiveMaintenance.FrequencyDays);
+                task.PreventiveMaintenance.NextDueDate = newDate;
+
+                bool pendingExists = await _context.MaintenanceTasks.AnyAsync(t => 
+                    t.PreventiveMaintenanceId == task.PreventiveMaintenanceId && 
+                    t.ScheduledDate == newDate && 
+                    t.Status == "Pending"
+                );
+
+                if (!pendingExists)
                 {
-                    PreventiveMaintenanceId = task.PreventiveMaintenanceId,
-                    ScheduledDate = task.PreventiveMaintenance.NextDueDate,
-                    Status = "Pending"
-                });
+                    _context.MaintenanceTasks.Add(new MaintenanceTask
+                    {
+                        PreventiveMaintenanceId = task.PreventiveMaintenanceId,
+                        ScheduledDate = newDate,
+                        Status = "Pending"
+                    });
+                }
             }
 
             await _context.SaveChangesAsync();
 
-            var result = await GetAllTasksAsync(1, 10, null, null);
-            return result.Items.FirstOrDefault(t => t.Id == taskId) ?? throw new Exception("Erreur");
+            return await GetTaskDtoByIdAsync(taskId);
         }
 
         public async Task<MaintenanceTaskDto> ConvertTaskToInterventionAsync(int taskId, int currentUserId)
@@ -240,33 +329,50 @@ namespace SmartMaintenance.Infrastructure.Services
                 .FirstOrDefaultAsync(t => t.Id == taskId);
 
             if (task == null) throw new Exception("Tâche non trouvée");
-            if (task.InterventionId.HasValue) throw new Exception("Cette tâche est déjà convertie en intervention");
+            if (task.Status != "Pending" || task.InterventionId.HasValue)
+                throw new Exception("Cette tâche n'est plus en attente ou a déjà été convertie en intervention.");
 
-            var intervention = new Intervention
+            // Check if an existing pending intervention with exact same title & equipment exists to prevent duplication
+            var existingIntervention = await _context.Interventions.FirstOrDefaultAsync(i => 
+                i.EquipmentId == task.PreventiveMaintenance.EquipmentId &&
+                i.Title == $"[PREV] {task.PreventiveMaintenance.Title}" &&
+                i.PlannedDate == task.ScheduledDate &&
+                i.Status == "Pending"
+            );
+
+            Intervention intervention;
+            if (existingIntervention != null)
             {
-                Title = $"[PREV] {task.PreventiveMaintenance.Title}",
-                Description = $"Maintenance préventive générée depuis le plan {task.PreventiveMaintenanceId}.\n{task.PreventiveMaintenance.Description}",
-                Priority = "Normal",
-                EquipmentId = task.PreventiveMaintenance.EquipmentId,
-                CreatedByUserId = currentUserId,
-                PlannedDate = task.ScheduledDate,
-                Status = "Pending",
-                CreatedAt = DateTime.UtcNow
-            };
-
-            _context.Interventions.Add(intervention);
-            
-            var history = new InterventionHistory
+                intervention = existingIntervention;
+            }
+            else
             {
-                Status = "Pending",
-                Comment = "Génération depuis une tâche préventive",
-                ChangedAt = DateTime.UtcNow,
-                ChangedByUserId = currentUserId,
-                Intervention = intervention
-            };
-            _context.InterventionHistories.Add(history);
+                intervention = new Intervention
+                {
+                    Title = $"[PREV] {task.PreventiveMaintenance.Title}",
+                    Description = $"Maintenance préventive générée depuis le plan {task.PreventiveMaintenanceId}.\n{task.PreventiveMaintenance.Description}",
+                    Priority = "Normal",
+                    EquipmentId = task.PreventiveMaintenance.EquipmentId,
+                    CreatedByUserId = currentUserId,
+                    PlannedDate = task.ScheduledDate,
+                    Status = "Pending",
+                    CreatedAt = DateTime.UtcNow
+                };
 
-            await _context.SaveChangesAsync(); // Save to get Intervention.Id
+                _context.Interventions.Add(intervention);
+
+                var history = new InterventionHistory
+                {
+                    Status = "Pending",
+                    Comment = "Génération depuis une tâche préventive",
+                    ChangedAt = DateTime.UtcNow,
+                    ChangedByUserId = currentUserId,
+                    Intervention = intervention
+                };
+                _context.InterventionHistories.Add(history);
+
+                await _context.SaveChangesAsync();
+            }
 
             task.InterventionId = intervention.Id;
             task.Status = "Completed";
@@ -285,19 +391,39 @@ namespace SmartMaintenance.Infrastructure.Services
             }
             else
             {
-                task.PreventiveMaintenance.NextDueDate = task.PreventiveMaintenance.NextDueDate.AddDays(task.PreventiveMaintenance.FrequencyDays);
-                _context.MaintenanceTasks.Add(new MaintenanceTask
+                var newDate = task.PreventiveMaintenance.NextDueDate.AddDays(task.PreventiveMaintenance.FrequencyDays);
+                task.PreventiveMaintenance.NextDueDate = newDate;
+
+                bool pendingExists = await _context.MaintenanceTasks.AnyAsync(t => 
+                    t.PreventiveMaintenanceId == task.PreventiveMaintenanceId && 
+                    t.ScheduledDate == newDate && 
+                    t.Status == "Pending"
+                );
+
+                if (!pendingExists)
                 {
-                    PreventiveMaintenanceId = task.PreventiveMaintenanceId,
-                    ScheduledDate = task.PreventiveMaintenance.NextDueDate,
-                    Status = "Pending"
-                });
+                    _context.MaintenanceTasks.Add(new MaintenanceTask
+                    {
+                        PreventiveMaintenanceId = task.PreventiveMaintenanceId,
+                        ScheduledDate = newDate,
+                        Status = "Pending"
+                    });
+                }
             }
 
             await _context.SaveChangesAsync();
 
-            var result = await GetAllTasksAsync(1, 10, null, null);
-            return result.Items.FirstOrDefault(t => t.Id == taskId) ?? throw new Exception("Erreur");
+            return await GetTaskDtoByIdAsync(taskId);
+        }
+
+        public async Task<bool> DeleteTaskAsync(int id)
+        {
+            var task = await _context.MaintenanceTasks.FindAsync(id);
+            if (task == null) return false;
+
+            _context.MaintenanceTasks.Remove(task);
+            await _context.SaveChangesAsync();
+            return true;
         }
     }
 }

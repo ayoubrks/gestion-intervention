@@ -123,7 +123,7 @@ Au premier lancement, la base est remplie automatiquement avec ces comptes :
 | Rôle | Email | Mot de passe |
 |---|---|---|
 | **Admin** | `admin@smartmaintenance.com` | `Admin123!` |
-| **Manager** | `manager@smartmaintenance.com` | `Manager123!` |
+| **** | `@smartmaintenance.com` | `123!` |
 | **Technicien 1** | `tech1@smartmaintenance.com` | `Tech123!` |
 | **Technicien 2** | `tech2@smartmaintenance.com` | `Tech123!` |
 
@@ -152,7 +152,7 @@ PreventiveMaintenances ──── Equipment (N:1)
     MaintenanceTasks
 ```
 
-- Un **User** a un **Role** (Admin, Manager, Technician)
+- Un **User** a un **Role** (Admin, , Technician)
 - Un **User** avec le rôle Technician a un profil **Technician**
 - Une **Intervention** est liée à un **Equipment** et peut être assignée à un **Technician**
 - L'**InterventionHistory** trace tous les changements de statut

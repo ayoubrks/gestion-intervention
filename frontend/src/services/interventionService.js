@@ -65,6 +65,11 @@ const interventionService = {
   getInterventionHistory: async (id) => {
     const response = await api.get(`/interventions/${id}/history`);
     return response.data;
+  },
+
+  deleteIntervention: async (id) => {
+    const response = await api.delete(`/interventions/${id}`);
+    return response.data;
   }
 };
 

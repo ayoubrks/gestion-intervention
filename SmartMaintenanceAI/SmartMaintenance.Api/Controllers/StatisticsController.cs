@@ -29,7 +29,7 @@ namespace SmartMaintenance.Api.Controllers
         public async Task<IActionResult> GetAISynthesis()
         {
             var synthesis = await _statsService.GetAISynthesisAsync();
-            return Ok(new { synthesis });
+            return Ok(synthesis);
         }
     }
 }

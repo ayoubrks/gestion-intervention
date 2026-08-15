@@ -185,7 +185,7 @@ const Users = () => {
                   </td>
                   <td style={{ padding: '16px 24px', color: 'var(--text-muted)' }}>{u.email}</td>
                   <td style={{ padding: '16px 24px' }}>
-                    <span className={`badge ${u.roleName === 'Admin' ? 'badge-cancelled' : u.roleName === 'Manager' ? 'badge-inprogress' : 'badge-completed'}`}>
+                    <span className={`badge ${u.roleName === 'Admin' ? 'badge-cancelled' : 'badge-completed'}`}>
                       {u.roleName}
                     </span>
                   </td>

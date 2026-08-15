@@ -23,6 +23,9 @@ namespace SmartMaintenance.Infrastructure
             services.AddScoped<SmartMaintenance.Application.Interfaces.ISparePartService, SmartMaintenance.Infrastructure.Services.SparePartService>();
             services.AddScoped<SmartMaintenance.Application.Interfaces.IPreventiveMaintenanceService, SmartMaintenance.Infrastructure.Services.PreventiveMaintenanceService>();
             services.AddScoped<SmartMaintenance.Application.Interfaces.IStatisticsService, SmartMaintenance.Infrastructure.Services.StatisticsService>();
+            
+            // IA Service
+            services.AddHttpClient<SmartMaintenance.Application.Interfaces.IAiService, SmartMaintenance.Infrastructure.Services.AiService>();
 
             return services;
         }

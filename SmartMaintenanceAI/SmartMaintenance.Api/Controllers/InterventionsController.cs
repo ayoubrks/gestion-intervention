@@ -52,7 +52,7 @@ namespace SmartMaintenance.Api.Controllers
 
         // POST: api/interventions
         [HttpPost]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create(CreateInterventionDto createDto)
         {
             try
@@ -69,7 +69,7 @@ namespace SmartMaintenance.Api.Controllers
 
         // PUT: api/interventions/5
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Update(int id, UpdateInterventionDto updateDto)
         {
             try
@@ -85,7 +85,7 @@ namespace SmartMaintenance.Api.Controllers
 
         // DELETE: api/interventions/5
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize]
         public async Task<IActionResult> Delete(int id)
         {
             var result = await _interventionService.DeleteInterventionAsync(id);
@@ -95,7 +95,7 @@ namespace SmartMaintenance.Api.Controllers
 
         // POST: api/interventions/5/assign
         [HttpPost("{id}/assign")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> AssignTechnician(int id, AssignTechnicianDto assignDto)
         {
             try
@@ -112,7 +112,7 @@ namespace SmartMaintenance.Api.Controllers
 
         // POST: api/interventions/5/start
         [HttpPost("{id}/start")]
-        [Authorize(Roles = "Admin,Manager,Technician")]
+        [Authorize(Roles = "Admin,Technician")]
         public async Task<IActionResult> Start(int id)
         {
             try
@@ -129,7 +129,7 @@ namespace SmartMaintenance.Api.Controllers
 
         // POST: api/interventions/5/complete
         [HttpPost("{id}/complete")]
-        [Authorize(Roles = "Admin,Manager,Technician")]
+        [Authorize(Roles = "Admin,Technician")]
         public async Task<IActionResult> Complete(int id, CompleteInterventionDto completeDto)
         {
             try
@@ -146,7 +146,7 @@ namespace SmartMaintenance.Api.Controllers
 
         // POST: api/interventions/5/cancel
         [HttpPost("{id}/cancel")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Cancel(int id, [FromBody] string reason)
         {
             try

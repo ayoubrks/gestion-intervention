@@ -119,11 +119,20 @@
   flex-direction: column;
   gap: 10px;
   padding: 12px;
-  scrollbar-width: none;
+  /* Afficher une barre de défilement discrète */
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
 }
-.column-content::-webkit-scrollbar { display: none; }
-
-/* Empty state inside column */
+.column-content::-webkit-scrollbar {
+  width: 6px;
+}
+.column-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+.column-content::-webkit-scrollbar-thumb {
+  background-color: var(--border-strong);
+  border-radius: 10px;
+}
 .column-empty {
   display: flex;
   flex-direction: column;
@@ -147,6 +156,7 @@
   cursor: default;
   transition: box-shadow var(--t-fast), border-color var(--t-fast), transform var(--t-fast);
   overflow: hidden;
+  flex-shrink: 0; /* Empêche la carte d'être écrasée si la colonne est pleine */
 }
 
 .kanban-card:hover {

@@ -3,6 +3,7 @@ import preventiveService from '../services/preventiveService';
 import equipmentService from '../services/equipmentService';
 import { AuthContext } from '../context/AuthContext';
 import { Calendar, Plus, Play, CheckCircle, Trash2, X, RefreshCw } from 'lucide-react';
+import { toast } from 'react-toastify';
 import ConfirmModal from '../components/ConfirmModal';
 import './Preventive.css';
 
@@ -20,10 +21,12 @@ const Preventive = () => {
   const [isCompleteOpen, setIsCompleteOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);
+  const [convertingId, setConvertingId] = useState(null);
 
   // Confirm modal state
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [deleteType, setDeleteType] = useState('plan');
 
   // Forms
   const [planForm, setPlanForm] = useState({
@@ -65,12 +68,12 @@ const Preventive = () => {
     e.preventDefault();
     try {
       if (!planForm.nextDueDate) {
-        alert("Veuillez sélectionner une date de prochaine échéance.");
+        toast.warning("Veuillez sélectionner une date de prochaine échéance.");
         return;
       }
       const parsedDate = new Date(planForm.nextDueDate);
       if (isNaN(parsedDate.getTime())) {
-        alert("Date invalide.");
+        toast.warning("Date invalide.");
         return;
       }
 
@@ -85,11 +88,18 @@ const Preventive = () => {
       setPlanForm({ title: '', description: '', frequencyDays: 30, nextDueDate: '', equipmentId: '' });
       fetchData();
     } catch (error) {
-      alert("Erreur création plan: " + (error.response?.data?.message || error.message));
+      toast.error("Erreur création plan: " + (error.response?.data?.message || error.message));
     }
   };
 
   const handleDeletePlan = (id) => {
+    setDeleteType('plan');
+    setConfirmDeleteId(id);
+    setConfirmOpen(true);
+  };
+
+  const handleDeleteTask = (id) => {
+    setDeleteType('task');
     setConfirmDeleteId(id);
     setConfirmOpen(true);
   };
@@ -97,10 +107,16 @@ const Preventive = () => {
   const confirmDelete = async () => {
     setConfirmOpen(false);
     try {
-      await preventiveService.deletePlan(confirmDeleteId);
+      if (deleteType === 'task') {
+        await preventiveService.deleteTask(confirmDeleteId);
+        toast.success("Tâche préventive supprimée avec succès.");
+      } else {
+        await preventiveService.deletePlan(confirmDeleteId);
+        toast.success("Plan préventif supprimé avec succès.");
+      }
       fetchData();
     } catch (error) {
-      alert("Erreur suppression: " + (error.response?.data?.message || error.message));
+      toast.error("Erreur suppression: " + (error.response?.data?.message || error.message));
     }
   };
 
@@ -109,10 +125,10 @@ const Preventive = () => {
     try {
       await preventiveService.generateTasks(selectedPlan.id, parseInt(generateCount));
       setIsGenerateOpen(false);
-      alert(`${generateCount} occurrence(s) générée(s) avec succès !`);
+      toast.success(`${generateCount} occurrence(s) générée(s) avec succès !`);
       fetchData();
     } catch (error) {
-      alert("Erreur génération tâches: " + (error.response?.data?.message || error.message));
+      toast.error("Erreur génération tâches: " + (error.response?.data?.message || error.message));
     }
   };
 
@@ -124,17 +140,21 @@ const Preventive = () => {
       setCompleteRemarks('');
       fetchData();
     } catch (error) {
-      alert("Erreur complétion tâche: " + (error.response?.data?.message || error.message));
+      toast.error("Erreur complétion tâche: " + (error.response?.data?.message || error.message));
     }
   };
 
   const handleConvertToIntervention = async (taskId) => {
+    if (convertingId) return;
+    setConvertingId(taskId);
     try {
       await preventiveService.convertToIntervention(taskId);
-      alert("Tâche préventive convertie avec succès en Intervention !");
-      fetchData();
+      toast.success("Tâche préventive convertie avec succès en Intervention !");
+      await fetchData();
     } catch (error) {
-      alert("Erreur conversion tâche: " + (error.response?.data?.message || error.message));
+      toast.error("Erreur conversion tâche: " + (error.response?.data?.message || error.message));
+    } finally {
+      setConvertingId(null);
     }
   };
 
@@ -142,7 +162,7 @@ const Preventive = () => {
     <div className="preventive-page">
       <div className="flex justify-between items-center mb-4">
         <h1>Maintenance Préventive</h1>
-        {activeTab === 'plans' && (user?.role === 'Admin' || user?.role === 'Manager') && (
+        {activeTab === 'plans' && (user?.role === 'Admin' ) && (
           <button className="btn btn-primary" onClick={() => setIsPlanModalOpen(true)}>
             <Plus size={18} />
             Créer un plan de maintenance
@@ -190,7 +210,7 @@ const Preventive = () => {
                     <td style={{ padding: '16px' }}>{new Date(plan.nextDueDate).toLocaleDateString()}</td>
                     <td style={{ padding: '16px' }}>
                       <div className="flex gap-2">
-                        {(user?.role === 'Admin' || user?.role === 'Manager') && (
+                        {(user?.role === 'Admin' ) && (
                           <>
                             <button className="icon-btn" title="Planifier des occurrences" onClick={() => { setSelectedPlan(plan); setGenerateCount(1); setIsGenerateOpen(true); }}>
                               <RefreshCw size={14} />
@@ -244,14 +264,30 @@ const Preventive = () => {
                       <div className="flex gap-2">
                         {task.status === 'Pending' && (
                           <>
-                            <button className="btn btn-secondary btn-sm flex items-center gap-1" title="Créer une intervention" onClick={() => handleConvertToIntervention(task.id)}>
-                              <Play size={12} /> Intervention
+                            <button 
+                              className="btn btn-secondary btn-sm flex items-center gap-1" 
+                              title="Créer une intervention" 
+                              disabled={convertingId !== null}
+                              onClick={() => handleConvertToIntervention(task.id)}
+                            >
+                              <Play size={12} /> {convertingId === task.id ? 'Conversion...' : 'Intervention'}
                             </button>
-                            <button className="btn btn-primary btn-sm flex items-center gap-1" title="Clôturer directement" onClick={() => { setSelectedTask(task); setCompleteRemarks(''); setIsCompleteOpen(true); }}>
+                            <button 
+                              className="btn btn-primary btn-sm flex items-center gap-1" 
+                              title="Clôturer directement" 
+                              onClick={() => { setSelectedTask(task); setCompleteRemarks(''); setIsCompleteOpen(true); }}
+                            >
                               <CheckCircle size={12} /> Clôturer
                             </button>
                           </>
                         )}
+                        <button 
+                          className="icon-btn btn-danger-icon" 
+                          title="Supprimer la tâche" 
+                          onClick={() => handleDeleteTask(task.id)}
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -364,8 +400,11 @@ const Preventive = () => {
         isOpen={confirmOpen}
         onConfirm={confirmDelete}
         onCancel={() => setConfirmOpen(false)}
-        title="Supprimer le plan de maintenance"
-        message={<>Voulez-vous vraiment supprimer ce plan de maintenance ? Cette action est <strong>irréversible</strong>.</>}
+        title={deleteType === 'task' ? "Supprimer la tâche préventive" : "Supprimer le plan de maintenance"}
+        message={deleteType === 'task'
+          ? <>Voulez-vous vraiment supprimer cette tâche préventive ? Cette action est <strong>irréversible</strong>.</>
+          : <>Voulez-vous vraiment supprimer ce plan de maintenance ? Cette action est <strong>irréversible</strong>.</>
+        }
         confirmText="Supprimer"
         variant="danger"
       />

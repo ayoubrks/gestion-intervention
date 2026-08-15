@@ -179,7 +179,7 @@ const Equipments = () => {
     <div className="equipments-page">
       <div className="flex justify-between items-center mb-4">
         <h1>Gestion des Équipements</h1>
-        {(user?.role === 'Admin' || user?.role === 'Manager') && (
+        {(user?.role === 'Admin' ) && (
           <div className="flex gap-2">
             <button className="btn btn-secondary" onClick={() => setIsCategoryModalOpen(true)}>
               <Layers size={18} />
@@ -246,7 +246,7 @@ const Equipments = () => {
                 {eq.categoryName || 'Général'}
               </div>
               
-              {(user?.role === 'Admin' || user?.role === 'Manager') && (
+              {(user?.role === 'Admin' ) && (
                 <div className="eq-actions flex gap-2 mt-3">
                   <button className="icon-btn" title="Modifier" onClick={() => openModal(eq)}>
                     <Edit size={16} />

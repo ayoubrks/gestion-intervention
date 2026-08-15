@@ -214,8 +214,32 @@ namespace SmartMaintenance.Infrastructure.Services
 
         public async Task<bool> DeleteInterventionAsync(int id)
         {
-            var intervention = await _context.Interventions.FindAsync(id);
+            var intervention = await _context.Interventions
+                .Include(i => i.History)
+                .Include(i => i.SparePartsUsed)
+                .FirstOrDefaultAsync(i => i.Id == id);
+                
             if (intervention == null) return false;
+
+            // Unlink any preventive maintenance task referencing this intervention
+            var linkedTasks = await _context.MaintenanceTasks
+                .Where(t => t.InterventionId == id)
+                .ToListAsync();
+
+            foreach (var task in linkedTasks)
+            {
+                task.InterventionId = null;
+            }
+
+            if (intervention.History != null && intervention.History.Any())
+            {
+                _context.InterventionHistories.RemoveRange(intervention.History);
+            }
+
+            if (intervention.SparePartsUsed != null && intervention.SparePartsUsed.Any())
+            {
+                _context.InterventionSpareParts.RemoveRange(intervention.SparePartsUsed);
+            }
 
             _context.Interventions.Remove(intervention);
             await _context.SaveChangesAsync();

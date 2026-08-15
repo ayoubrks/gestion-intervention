@@ -40,7 +40,7 @@ namespace SmartMaintenance.Api.Controllers
 
         // POST: api/spareparts
         [HttpPost]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create(CreateSparePartDto createDto)
         {
             try
@@ -56,7 +56,7 @@ namespace SmartMaintenance.Api.Controllers
 
         // PUT: api/spareparts/5
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Update(int id, UpdateSparePartDto updateDto)
         {
             try
@@ -89,7 +89,7 @@ namespace SmartMaintenance.Api.Controllers
 
         // POST: api/spareparts/5/adjust-stock
         [HttpPost("{id}/adjust-stock")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> AdjustStock(int id, [FromBody] int quantityAdjustment)
         {
             try
@@ -105,7 +105,7 @@ namespace SmartMaintenance.Api.Controllers
 
         // POST: api/spareparts/interventions/5/consume
         [HttpPost("interventions/{interventionId}/consume")]
-        [Authorize(Roles = "Admin,Manager,Technician")]
+        [Authorize(Roles = "Admin,Technician")]
         public async Task<IActionResult> ConsumeInIntervention(int interventionId, ConsumeSparePartDto consumeDto)
         {
             try

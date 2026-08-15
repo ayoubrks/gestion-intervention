@@ -179,3 +179,121 @@
 .ai-text ul { padding-left: 18px; margin: 4px 0; }
 .ai-text li { margin-bottom: 4px; }
 .ai-text strong { color: var(--text-primary); font-weight: 600;}
+
+/* ── AI Synthesis Structured View ── */
+.synth-root {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.synth-section {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+
+.synth-section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.synth-stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.synth-stat {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: center;
+}
+
+.synth-stat-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.synth-stat-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* ── Recommendation Cards ── */
+.synth-recs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rec-card {
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  border-left: 3px solid transparent;
+}
+
+.rec-success { background: rgba(34,197,94,0.08);  border-left-color: var(--green); }
+.rec-warning { background: rgba(245,158,11,0.08); border-left-color: var(--amber); }
+.rec-danger  { background: rgba(239,68,68,0.08);  border-left-color: var(--red); }
+.rec-info    { background: rgba(99,102,241,0.08); border-left-color: var(--accent-light); }
+
+.rec-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.rec-success .rec-header { color: var(--green); }
+.rec-warning .rec-header { color: var(--amber); }
+.rec-danger  .rec-header { color: var(--red); }
+.rec-info    .rec-header { color: var(--accent-light); }
+
+.rec-title {
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.rec-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin: 0 0 4px 24px;
+  line-height: 1.5;
+}
+
+.rec-items {
+  margin: 4px 0 0 24px;
+  padding-left: 14px;
+  list-style: disc;
+}
+
+.rec-items li {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+@media (max-width: 600px) {
+  .synth-stat-row { grid-template-columns: repeat(2, 1fr); }
+}
+

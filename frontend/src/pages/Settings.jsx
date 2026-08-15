@@ -10,10 +10,9 @@ const Settings = () => {
   // Form states
   const [passwordForm, setPasswordForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
   const [preferences, setPreferences] = useState({
-    theme: 'dark',
-    currency: '€',
-    dateFormat: 'DD/MM/YYYY',
-    pageSize: '20'
+    currency: localStorage.getItem('app-currency') || 'MAD',
+    dateFormat: localStorage.getItem('app-dateFormat') || 'DD/MM/YYYY',
+    pageSize: localStorage.getItem('app-pageSize') || '20'
   });
   const [notifications, setNotifications] = useState({
     emailLowStock: true,
@@ -35,7 +34,11 @@ const Settings = () => {
   };
 
   const handleSavePreferences = (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
+    localStorage.setItem('app-currency', preferences.currency);
+    localStorage.setItem('app-dateFormat', preferences.dateFormat);
+    localStorage.setItem('app-pageSize', preferences.pageSize);
+
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
   };
@@ -124,27 +127,16 @@ const Settings = () => {
             <div>
               <h3 className="settings-section-title flex items-center gap-2"><Sliders size={20}/> Préférences d'affichage</h3>
               <form onSubmit={handleSavePreferences}>
-                <div className="setting-row">
-                  <div className="setting-info">
-                    <h4>Thème visuel</h4>
-                    <p>Mode sombre moderne glassmorphism par défaut</p>
-                  </div>
-                  <select className="form-input" style={{ width: '160px' }} value={preferences.theme} onChange={e => setPreferences({...preferences, theme: e.target.value})}>
-                    <option value="dark">Sombre (Glass)</option>
-                    <option value="light">Clair</option>
-                  </select>
-                </div>
 
                 <div className="setting-row">
                   <div className="setting-info">
                     <h4>Devise monétaire</h4>
-                    <p>Utilisée pour le coût des pièces de rechange et interventions</p>
+                    <p>Utilisée pour le coût des pièces de rechange et interventions (MAD par défaut)</p>
                   </div>
-                  <select className="form-input" style={{ width: '160px' }} value={preferences.currency} onChange={e => setPreferences({...preferences, currency: e.target.value})}>
-                    <option value="€">Euros (€)</option>
-                    <option value="$">Dollars ($)</option>
-                    <option value="TND">Dinar TND</option>
-                    <option value="DZD">Dinar DZD</option>
+                  <select className="form-input" style={{ width: '220px' }} value={preferences.currency} onChange={e => setPreferences({...preferences, currency: e.target.value})}>
+                    <option value="MAD">MAD - Dirham Marocain (Officiel)</option>
+                    <option value="€">EUR - Euros (€)</option>
+                    <option value="$">USD - Dollars ($)</option>
                   </select>
                 </div>
 

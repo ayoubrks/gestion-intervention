@@ -49,7 +49,7 @@ namespace SmartMaintenance.Api.Controllers
         }
 
         [HttpPost("plans")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize]
         public async Task<IActionResult> CreatePlan(CreatePreventiveMaintenanceDto createDto)
         {
             try
@@ -64,7 +64,7 @@ namespace SmartMaintenance.Api.Controllers
         }
 
         [HttpDelete("plans/{id}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize]
         public async Task<IActionResult> DeletePlan(int id)
         {
             var result = await _preventiveService.DeletePlanAsync(id);
@@ -73,7 +73,7 @@ namespace SmartMaintenance.Api.Controllers
         }
 
         [HttpPost("plans/{id}/generate-tasks")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize]
         public async Task<IActionResult> GenerateTasks(int id, [FromQuery] int count = 1)
         {
             try
@@ -103,7 +103,7 @@ namespace SmartMaintenance.Api.Controllers
         }
 
         [HttpPost("tasks/{id}/complete")]
-        [Authorize(Roles = "Admin,Manager,Technician")]
+        [Authorize]
         public async Task<IActionResult> CompleteTask(int id, CompleteMaintenanceTaskDto completeDto)
         {
             try
@@ -118,7 +118,7 @@ namespace SmartMaintenance.Api.Controllers
         }
 
         [HttpPost("tasks/{id}/convert-to-intervention")]
-        [Authorize(Roles = "Admin,Manager,Technician")]
+        [Authorize]
         public async Task<IActionResult> ConvertToIntervention(int id)
         {
             try
@@ -131,6 +131,15 @@ namespace SmartMaintenance.Api.Controllers
             {
                 return BadRequest(new { message = ex.Message });
             }
+        }
+
+        [HttpDelete("tasks/{id}")]
+        [Authorize]
+        public async Task<IActionResult> DeleteTask(int id)
+        {
+            var result = await _preventiveService.DeleteTaskAsync(id);
+            if (!result) return NotFound(new { message = "Tâche non trouvée" });
+            return Ok(new { message = "Tâche supprimée avec succès" });
         }
     }
 }

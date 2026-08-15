@@ -44,6 +44,11 @@ const preventiveService = {
   convertToIntervention: async (id) => {
     const response = await api.post(`/preventivemaintenances/tasks/${id}/convert-to-intervention`);
     return response.data;
+  },
+
+  deleteTask: async (id) => {
+    const response = await api.delete(`/preventivemaintenances/tasks/${id}`);
+    return response.data;
   }
 };
 
