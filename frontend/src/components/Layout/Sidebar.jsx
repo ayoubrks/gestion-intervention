@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import {
   LayoutDashboard, Wrench, CalendarClock, ShieldCheck,
-  Package, Settings, Users
+  Package, Settings, Users, Box
 } from 'lucide-react';
 import './Sidebar.css';
 
@@ -25,7 +25,7 @@ const Sidebar = () => {
       {/* Logo */}
       <div className="sidebar-logo">
         <div className="logo-mark">
-          <Wrench size={17} color="white" strokeWidth={2.5} />
+          <Box size={18} color="white" strokeWidth={2} />
         </div>
         <div>
           <div className="logo-text">SmartMaint</div>

@@ -37,7 +37,7 @@ const Login = () => {
         {/* Logo Header */}
         <div className="login-brand">
           <Box size={28} className="brand-icon" />
-          <h1 className="brand-text">Product Inc.</h1>
+          <h1 className="brand-text">SmartMaint</h1>
         </div>
 
         {/* Card */}

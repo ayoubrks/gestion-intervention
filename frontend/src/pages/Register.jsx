@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Wrench, Mail, Lock, User, Shield, Loader2 } from 'lucide-react';
+import { Box, Mail, Lock, User, Shield, Loader2 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import authService from '../services/authService';
 import './Register.css';
@@ -48,7 +48,7 @@ const Register = () => {
       <div className="register-box glass-card animate-fade-in">
         <div className="register-header">
           <div className="register-logo">
-            <Wrench size={32} color="white" />
+            <Box size={32} color="white" />
           </div>
           <h2>Smart<span>Maintenance</span></h2>
           <p>Créez votre compte de gestion</p>

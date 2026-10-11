@@ -93,7 +93,7 @@ export default function LoginSimple() {
         <VStack gap={2} hAlign="center">
           <Icon icon={CubeIcon} size="lg" />
           <Text type="body" weight="bold" size="lg">
-            Product Inc.
+            SmartMaint
           </Text>
         </VStack>
 
